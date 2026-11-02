@@ -13,13 +13,58 @@
  */
 #include <mlpack/bindings/go/mlpack/capi/arma_util.h>
 #include "arma_util.hpp"
+#include <algorithm>
 #include "io_util.hpp"
 #include <mlpack/core/util/io.hpp>
 
 namespace mlpack {
 namespace util {
 
+namespace {
+
+// Copie vers un tampon appartenant à Go, sans transférer la propriété native.
+template<typename MatType>
+bool CopyMatToGo(const MatType& source, double* destination, const size_t length)
+{
+  if (source.n_elem != length || (length != 0 && destination == nullptr))
+    return false;
+  if (length != 0)
+    std::copy(source.begin(), source.end(), destination);
+  return true;
+}
+
+} // namespace
+
 extern "C" {
+
+bool mlpackCopyParamMat(void* params, const char* identifier,
+                       double* destination, const size_t length, const int kind)
+{
+  if (params == nullptr || identifier == nullptr)
+    return false;
+  try
+  {
+    util::Params& p = *static_cast<util::Params*>(params);
+    switch (kind)
+    {
+      case 0: return CopyMatToGo(p.Get<arma::mat>(identifier), destination, length);
+      case 1: return CopyMatToGo(p.Get<arma::Mat<size_t>>(identifier), destination, length);
+      case 2: return CopyMatToGo(p.Get<arma::rowvec>(identifier), destination, length);
+      case 3: return CopyMatToGo(p.Get<arma::Row<size_t>>(identifier), destination, length);
+      case 4: return CopyMatToGo(p.Get<arma::colvec>(identifier), destination, length);
+      case 5: return CopyMatToGo(p.Get<arma::Col<size_t>>(identifier), destination, length);
+      case 6:
+        return CopyMatToGo(std::get<1>(p.Get<std::tuple<DatasetInfo, arma::mat>>(identifier)),
+                           destination, length);
+      default: return false;
+    }
+  }
+  catch (...)
+  {
+    // Une erreur de conversion ne doit pas traverser l'interface C.
+    return false;
+  }
+}
 
 /**
  * Pass Gonum Dense pointer and wrap an Armadillo mat around it.

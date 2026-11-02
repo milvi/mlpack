@@ -219,7 +219,9 @@ void PrintGo(util::Params& params,
 
   // Reset any timers and disable backtraces.
   cout << "  params := getParams(\"" << bindingName << "\")" << endl;
+  cout << "  defer cleanParams(params)" << endl;
   cout << "  timers := getTimers()" << endl;
+  cout << "  defer cleanTimers(timers)" << endl;
   cout << endl;
   cout << "  disableBacktrace()" << endl;
   cout << "  disableVerbose()" << endl;
@@ -259,10 +261,6 @@ void PrintGo(util::Params& params,
     params.functionMap[d.tname]["PrintOutputProcessing"](d, NULL, NULL);
   }
 
-  // Clean up memory.
-  cout << "  // Clean memory." << endl;
-  cout << "  cleanParams(params)" << endl;
-  cout << "  cleanTimers(timers)" << endl;
 
   // Return output parameters.
   cout << "  " << "// Return output(s)." << endl;

@@ -41,7 +41,7 @@ endif ()
 if (BUILD_GO_BINDINGS)
 
   # Gonum will automatically be installed by Go's module support during build.
-  find_package(Go 1.11.0)
+  find_package(Go 1.21.0)
   if (NOT GO_FOUND)
     set(GO_NOT_FOUND_MSG "${GO_NOT_FOUND_MSG}\n    - Go")
   endif ()

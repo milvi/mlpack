@@ -18,6 +18,27 @@ namespace mlpack {
 
 extern "C" {
 
+bool mlpackCopyParamVectorInt(void* params, const char* identifier,
+                             long long* destination, const size_t length)
+{
+  if (params == nullptr || identifier == nullptr ||
+      (length != 0 && destination == nullptr))
+    return false;
+  try
+  {
+    const auto& source = static_cast<util::Params*>(params)->Get<std::vector<int>>(identifier);
+    if (source.size() != length)
+      return false;
+    for (size_t i = 0; i < length; ++i)
+      destination[i] = source[i];
+    return true;
+  }
+  catch (...)
+  {
+    return false;
+  }
+}
+
 /**
  * Get a new Params object for the given binding name.
  */

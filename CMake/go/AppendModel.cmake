@@ -65,8 +65,10 @@ function(append_model SERIALIZATION_FILE PROGRAM_MAIN_FILE)
             "}\n\n"
             "func (m *${GOMODEL_SAFE_TYPE}) alloc"
             "${MODEL_SAFE_TYPE}(params *params, identifier string) {\n"
+            "  id := C.CString(identifier)\n"
+            "  defer freeCString(id)\n"
             "  m.mem = C.mlpackGet${MODEL_SAFE_TYPE}Ptr(params.mem,\n"
-            "      C.CString(identifier))\n"
+            "      id)\n"
             "  runtime.KeepAlive(m)\n"
             "}\n\n"
             "func (m *${GOMODEL_SAFE_TYPE}) get"
@@ -76,8 +78,10 @@ function(append_model SERIALIZATION_FILE PROGRAM_MAIN_FILE)
             "func set${MODEL_SAFE_TYPE}(params* params,\n"
             "                           identifier string,\n"
             "                           ptr *${GOMODEL_SAFE_TYPE}) {\n"
+            "  id := C.CString(identifier)\n"
+            "  defer freeCString(id)\n"
             "  C.mlpackSet${MODEL_SAFE_TYPE}Ptr(params.mem,\n"
-            "      C.CString(identifier), ptr.mem)\n"
+            "      id, ptr.mem)\n"
             "}\n\n")
       endif()
     endforeach ()
