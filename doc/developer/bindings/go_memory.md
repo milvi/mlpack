@@ -74,6 +74,14 @@ de pointeurs avec `GOEXPERIMENT=cgocheck2`. Un diagnostic glibc sur 50 appels de
 avant correction. Les détails et les limites du laboratoire sont dans le rapport
 de validation du dépôt de distribution.
 
+La construction intégrale neuve des 47 bibliothèques, sous utilisateur ordinaire
+dans un conteneur Ubuntu 26.04, a aussi
+[réussi dans GitHub Actions](https://github.com/milvi/mlpack-go/actions/runs/41368925523)
+sur le commit de distribution `a4cedd823d9c44d970a1330fe6ef8a2d4e27149c`.
+Les tests ordinaires, les contrôles `cgocheck2`, les tests de mémoire native et
+l'exemple k-means y passent. La variation native du même diagnostic y est de
++3 920 octets. Ce résultat est distinct de la mesure du laboratoire ci-dessus.
+
 Ce changement ne définit pas encore de contrat général de destruction des modèles
 opaques, de conversion des exceptions d'algorithmes en erreurs Go ou de sûreté
 des appels concurrents. Les anciens accesseurs natifs à transfert de pointeurs
