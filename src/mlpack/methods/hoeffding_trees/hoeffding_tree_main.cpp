@@ -10,6 +10,7 @@
  * http://www.opensource.org/licenses/BSD-3-Clause for more information.
  */
 #include <mlpack/core.hpp>
+#include <mlpack/core/util/owned_model.hpp>
 
 #undef BINDING_NAME
 #define BINDING_NAME hoeffding_tree
@@ -162,6 +163,8 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
 
   // Do we need to load a model or do we already have one?
   HoeffdingTreeModel* model;
+  // Propriétaire local jusqu’au transfert vers les paramètres de sortie.
+  std::unique_ptr<std::remove_pointer_t<decltype(model)>> ownedModel;
   DatasetInfo datasetInfo;
   arma::mat trainingSet;
   arma::Row<size_t> labels;
@@ -173,13 +176,13 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
   {
     // Initialize a model.
     if (!params.Has("info_gain") && (numericSplitStrategy == "domingos"))
-      model = new HoeffdingTreeModel(HoeffdingTreeModel::GINI_HOEFFDING);
+      model = mlpack::util::MakeOwnedModel(ownedModel, HoeffdingTreeModel::GINI_HOEFFDING);
     else if (!params.Has("info_gain") && (numericSplitStrategy == "binary"))
-      model = new HoeffdingTreeModel(HoeffdingTreeModel::GINI_BINARY);
+      model = mlpack::util::MakeOwnedModel(ownedModel, HoeffdingTreeModel::GINI_BINARY);
     else if (params.Has("info_gain") && (numericSplitStrategy == "domingos"))
-      model = new HoeffdingTreeModel(HoeffdingTreeModel::INFO_HOEFFDING);
+      model = mlpack::util::MakeOwnedModel(ownedModel, HoeffdingTreeModel::INFO_HOEFFDING);
     else
-      model = new HoeffdingTreeModel(HoeffdingTreeModel::INFO_BINARY);
+      model = mlpack::util::MakeOwnedModel(ownedModel, HoeffdingTreeModel::INFO_BINARY);
   }
 
   // Now, do we need to train?
@@ -308,4 +311,5 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
 
   // Check the accuracy on the training set.
   params.Get<HoeffdingTreeModel*>("output_model") = model;
+  ownedModel.release();
 }

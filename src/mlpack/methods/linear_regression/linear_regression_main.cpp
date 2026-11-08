@@ -10,6 +10,7 @@
  * http://www.opensource.org/licenses/BSD-3-Clause for more information.
  */
 #include <mlpack/core.hpp>
+#include <mlpack/core/util/owned_model.hpp>
 
 #undef BINDING_NAME
 #define BINDING_NAME linear_regression
@@ -119,6 +120,8 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timer)
   rowvec responses;
 
   LinearRegression<>* lr;
+  // Propriétaire local jusqu’au transfert vers les paramètres de sortie.
+  std::unique_ptr<std::remove_pointer_t<decltype(lr)>> ownedModel;
 
   const bool computeModel = !params.Has("input_model");
   const bool computePrediction = params.Has("test");
@@ -170,7 +173,7 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timer)
     }
 
     timer.Start("regression");
-    lr = new LinearRegression<>(regressors, responses, lambda);
+    lr = mlpack::util::MakeOwnedModel(ownedModel, regressors, responses, lambda);
     timer.Stop("regression");
   }
   else
@@ -201,7 +204,7 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timer)
       // If we built the model, nothing will free it so we have to...
       const size_t dimensions = lr->Parameters().n_elem - 1;
       if (computeModel)
-        delete lr;
+        ownedModel.reset();
 
       Log::Fatal << "The model was trained on " << dimensions << "-dimensional "
           << "data, but the test points in '" << testOutput << "' are "
@@ -220,4 +223,5 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timer)
 
   // Save the model if needed.
   params.Get<LinearRegression<>*>("output_model") = lr;
+  ownedModel.release();
 }

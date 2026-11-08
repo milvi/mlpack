@@ -10,6 +10,7 @@
  * http://www.opensource.org/licenses/BSD-3-Clause for more information.
  */
 #include <mlpack/core.hpp>
+#include <mlpack/core/util/owned_model.hpp>
 
 #undef BINDING_NAME
 #define BINDING_NAME hmm_train
@@ -532,6 +533,8 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& /* timers */)
 
   // If we have a model file, we can autodetect the type.
   HMMModel* hmm;
+  // Propriétaire local jusqu’au transfert vers les paramètres de sortie.
+  std::unique_ptr<std::remove_pointer_t<decltype(hmm)>> ownedModel;
   if (params.Has("input_model"))
   {
     hmm = params.Get<HMMModel*>("input_model");
@@ -541,7 +544,7 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& /* timers */)
   else
   {
     // We need to initialize the model.
-    hmm = new HMMModel(typeId);
+    hmm = mlpack::util::MakeOwnedModel(ownedModel, typeId);
 
     // Catch any exceptions so that we can clean the model if needed.
     try
@@ -551,11 +554,12 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& /* timers */)
     }
     catch (std::exception& e)
     {
-      delete hmm;
+      ownedModel.reset();
       throw;
     }
   }
 
   // If necessary, save the output.
   params.Get<HMMModel*>("output_model") = hmm;
+  ownedModel.release();
 }

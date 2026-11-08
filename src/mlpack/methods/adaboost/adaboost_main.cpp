@@ -32,6 +32,7 @@
  * http://www.opensource.org/licenses/BSD-3-Clause for more information.
  */
 #include <mlpack/core.hpp>
+#include <mlpack/core/util/owned_model.hpp>
 
 #undef BINDING_NAME
 #define BINDING_NAME adaboost
@@ -175,10 +176,12 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
   ReportIgnoredParam(params, {{ "test", false }}, "predictions");
 
   AdaBoostModel* m;
+  // Propriétaire local jusqu’au transfert vers les paramètres de sortie.
+  std::unique_ptr<std::remove_pointer_t<decltype(m)>> ownedModel;
   if (params.Has("training"))
   {
     mat trainingData = std::move(params.Get<arma::mat>("training"));
-    m = new AdaBoostModel();
+    m = mlpack::util::MakeOwnedModel(ownedModel);
 
     // Load labels.
     arma::Row<size_t> labelsIn;
@@ -263,4 +266,5 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
   }
 
   params.Get<AdaBoostModel*>("output_model") = m;
+  ownedModel.release();
 }

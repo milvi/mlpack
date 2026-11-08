@@ -13,6 +13,7 @@
  * http://www.opensource.org/licenses/BSD-3-Clause for more information.
  */
 #include <mlpack/core.hpp>
+#include <mlpack/core/util/owned_model.hpp>
 
 #undef BINDING_NAME
 #define BINDING_NAME perceptron
@@ -137,6 +138,8 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
 
   // Now, load our model, if there is one.
   PerceptronModel* p;
+  // Propriétaire local jusqu’au transfert vers les paramètres de sortie.
+  std::unique_ptr<std::remove_pointer_t<decltype(p)>> ownedModel;
   if (params.Has("input_model"))
   {
     Log::Info << "Using saved perceptron from "
@@ -147,7 +150,7 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
   }
   else
   {
-    p = new PerceptronModel();
+    p = mlpack::util::MakeOwnedModel(ownedModel);
   }
 
   // Next, load the training data and labels (if they have been given).
@@ -186,7 +189,7 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
       {
         // Clean memory if needed.
         if (!params.Has("input_model"))
-          delete p;
+          ownedModel.reset();
 
         Log::Fatal << "The responses must have the same number of columns "
             "as the training set." << endl;
@@ -199,7 +202,7 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
       {
         // Clean memory if needed.
         if (!params.Has("input_model"))
-          delete p;
+          ownedModel.reset();
 
         Log::Fatal << "Can't get responses from training data "
             "since it has less than 2 rows." << endl;
@@ -268,7 +271,7 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
       // Clean memory if needed.
       const size_t perceptronDimensionality = p->P().Weights().n_rows;
       if (!params.Has("input_model"))
-        delete p;
+        ownedModel.reset();
 
       Log::Fatal << "Test data dimensionality (" << testData.n_rows << ") must "
           << "be the same as the dimensionality of the perceptron ("
@@ -292,4 +295,5 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
 
   // Lastly, save the output model.
   params.Get<PerceptronModel*>("output_model") = p;
+  ownedModel.release();
 }

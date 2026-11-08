@@ -16,5 +16,6 @@ RUN go version && g++ --version && dpkg-query -W libarmadillo-dev libensmallen-d
 RUN go test -v .
 RUN g++ -std=c++17 -O1 -g -fno-omit-frame-pointer -fsanitize=address,undefined \
     -fopenmp -DMLPACK_GO_MONOLITHIC -I. -Isrc tests/native_memory.cpp native_kmeans_api.cpp \
+    native_nbc.cpp native_arma_util.cpp native_io_util.cpp \
     -larmadillo -o /home/mlpack/native-memory
 CMD ["/home/mlpack/native-memory"]

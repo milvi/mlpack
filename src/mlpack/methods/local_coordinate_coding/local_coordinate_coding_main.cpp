@@ -10,6 +10,7 @@
  * http://www.opensource.org/licenses/BSD-3-Clause for more information.
  */
 #include <mlpack/core.hpp>
+#include <mlpack/core/util/owned_model.hpp>
 
 #undef BINDING_NAME
 #define BINDING_NAME local_coordinate_coding
@@ -143,6 +144,8 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
 
   // Do we have an existing model?
   LocalCoordinateCoding<>* lcc = NULL;
+  // Propriétaire local jusqu’au transfert vers les paramètres de sortie.
+  std::unique_ptr<std::remove_pointer_t<decltype(lcc)>> ownedModel;
   if (params.Has("input_model"))
     lcc = params.Get<LocalCoordinateCoding<>*>("input_model");
 
@@ -170,7 +173,7 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
         [](double x) { return x > 0; }, 1,
         "Tolerance should be a positive real number");
 
-    lcc = new LocalCoordinateCoding<>(0, 0.0);
+    lcc = mlpack::util::MakeOwnedModel(ownedModel, 0, 0.0);
 
     lcc->Lambda() = params.Get<double>("lambda");
     lcc->Atoms() = (size_t) params.Get<int>("atoms");
@@ -197,7 +200,7 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
         const size_t dictionarySize = lcc->Dictionary().n_cols;
         const size_t atoms = lcc->Atoms();
         if (!params.Has("input_model"))
-          delete lcc;
+          ownedModel.reset();
         Log::Fatal << "The initial dictionary has " << dictionarySize
             << " atoms, but the number of atoms was specified to be "
             << atoms << "!" << endl;
@@ -207,7 +210,7 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
       {
         const size_t dictionaryDimension = lcc->Dictionary().n_rows;
         if (!params.Has("input_model"))
-          delete lcc;
+          ownedModel.reset();
         Log::Fatal << "The initial dictionary has " << dictionaryDimension
             << " dimensions, but the data has " << matX.n_rows << " dimensions!"
             << endl;
@@ -231,7 +234,7 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
     {
       const size_t dictionaryDimension = lcc->Dictionary().n_rows;
       if (!params.Has("input_model"))
-        delete lcc;
+        ownedModel.reset();
       Log::Fatal << "Model was trained with a dimensionality of "
           << dictionaryDimension << ", but data in test file "
           << params.GetPrintable<mat>("test") << " has a dimensionality of "
@@ -257,4 +260,5 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
   // Save the dictionary and the model.
   params.Get<mat>("dictionary") = lcc->Dictionary();
   params.Get<LocalCoordinateCoding<>*>("output_model") = lcc;
+  ownedModel.release();
 }

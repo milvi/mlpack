@@ -10,6 +10,7 @@
  * http://www.opensource.org/licenses/BSD-3-Clause for more information.
  */
 #include <mlpack/core.hpp>
+#include <mlpack/core/util/owned_model.hpp>
 
 #undef BINDING_NAME
 #define BINDING_NAME cf
@@ -205,6 +206,8 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
 
   // Either load from a model, or train a model.
   CFModel* cf;
+  // Propriétaire local jusqu’au transfert vers les paramètres de sortie.
+  std::unique_ptr<std::remove_pointer_t<decltype(cf)>> ownedModel;
   if (params.Has("training"))
   {
     // Train a model.
@@ -235,7 +238,7 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
     // Get parameters.
     const size_t rank = (size_t) params.Get<int>("rank");
 
-    cf = new CFModel();
+    cf = mlpack::util::MakeOwnedModel(ownedModel);
 
     // Perform decomposition to prepare for recommendations.
     Log::Info << "Performing CF matrix decomposition on dataset..." << endl;
@@ -425,4 +428,5 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
   }
 
   params.Get<CFModel*>("output_model") = cf;
+  ownedModel.release();
 }

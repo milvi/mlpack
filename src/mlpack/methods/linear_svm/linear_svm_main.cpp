@@ -10,6 +10,7 @@
  * http://www.opensource.org/licenses/BSD-3-Clause for more information.
  */
 #include <mlpack/core.hpp>
+#include <mlpack/core/util/owned_model.hpp>
 
 #undef BINDING_NAME
 #define BINDING_NAME linear_svm
@@ -288,13 +289,15 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
 
   // Load the model, if necessary.
   LinearSVMModel* model;
+  // Propriétaire local jusqu’au transfert vers les paramètres de sortie.
+  std::unique_ptr<std::remove_pointer_t<decltype(model)>> ownedModel;
   if (params.Has("input_model"))
   {
     model = params.Get<LinearSVMModel*>("input_model");
   }
   else
   {
-    model = new LinearSVMModel();
+    model = mlpack::util::MakeOwnedModel(ownedModel);
   }
 
   // Now, do the training.
@@ -311,7 +314,7 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
     if (numClasses <= 1)
     {
       if (!params.Has("input_model"))
-        delete model;
+        ownedModel.reset();
       throw std::invalid_argument("Given input data has only 1 class!");
     }
 
@@ -380,7 +383,7 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
     {
       // Clean memory if needed.
       if (!params.Has("input_model"))
-        delete model;
+        ownedModel.reset();
       Log::Fatal << "Test data dimensionality (" << testSet.n_rows << ") must "
           << "be the same as the dimensionality of the training data ("
           << trainingDimensionality << ")!" << endl;
@@ -411,7 +414,7 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
       if (testSet.n_cols != testLabels.n_elem)
       {
         if (!params.Has("input_model"))
-          delete model;
+          ownedModel.reset();
         Log::Fatal << "Test data given with " << PRINT_PARAM_STRING("test")
             << " has " << testSet.n_cols << " points, but labels in "
             << PRINT_PARAM_STRING("test_labels") << " have "
@@ -460,4 +463,5 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
   }
 
   params.Get<LinearSVMModel*>("output_model") = model;
+  ownedModel.release();
 }

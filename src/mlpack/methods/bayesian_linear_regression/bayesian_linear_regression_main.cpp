@@ -10,6 +10,7 @@
  * http://www.opensource.org/licenses/BSD-3-Clause for more information.
  */
 #include <mlpack/core.hpp>
+#include <mlpack/core/util/owned_model.hpp>
 
 #undef BINDING_NAME
 #define BINDING_NAME bayesian_linear_regression
@@ -150,11 +151,13 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
   ReportIgnoredParam(params, {{"test", false}}, "predictions");
 
   BayesianLinearRegression<>* bayesLinReg;
+  // Propriétaire local jusqu’au transfert vers les paramètres de sortie.
+  std::unique_ptr<std::remove_pointer_t<decltype(bayesLinReg)>> ownedModel;
   if (params.Has("input"))
   {
     Log::Info << "Input given; model will be trained." << std::endl;
     // Initialize the object.
-    bayesLinReg = new BayesianLinearRegression<>(center, scale);
+    bayesLinReg = mlpack::util::MakeOwnedModel(ownedModel, center, scale);
 
     // Load covariates.
     mat matX = std::move(params.Get<arma::mat>("input"));
@@ -167,7 +170,7 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
 
     if (responses.n_elem != matX.n_cols)
     {
-      delete bayesLinReg;
+      ownedModel.reset();
       Log::Fatal << "Number of responses must be equal to number of rows of X!"
                  << endl;
     }
@@ -209,4 +212,5 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
   }
 
   params.Get<BayesianLinearRegression<>*>("output_model") = bayesLinReg;
+  ownedModel.release();
 }

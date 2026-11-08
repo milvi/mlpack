@@ -43,6 +43,10 @@ Les modèles opaques portent une propriété explicite : les paramètres disting
 modèles empruntés, exportés et non exportés. Le frontend partage un propriétaire
 entre alias et propose `Close`, avec un nettoyage automatique de secours. La
 libération des paramètres détruit les modèles non exportés, sans double destruction.
+Les 26 bindings qui construisent des modèles utilisent aussi un propriétaire local
+avant le transfert vers la sortie : une exception pendant l’entraînement ou la
+prédiction ne perd plus l’objet, et les anciennes destructions manuelles ne
+libèrent plus les modèles d’entrée empruntés.
 
 La compilation des méthodes dans un exécutable commun impose aussi une définition
 partagée des journaux (`MLPACK_GO_MONOLITHIC`) et des vérifications qui utilisent
@@ -66,8 +70,8 @@ AddressSanitizer (ASan) et UndefinedBehaviorSanitizer (UBSan). Il interrompt une
 allocation à chaque position successivement, vérifie que l’erreur traverse la
 frontière C et compte les `new`/`delete` encore actifs après chaque appel.
 LeakSanitizer (LSan) complète le contrôle quand l’environnement permet son
-inspection des processus. Ces contrôles couvrent le chemin k-means et les arbres
-employés ; ils ne constituent pas une certification de tous les algorithmes mlpack.
+inspection des processus. Ces contrôles couvrent le chemin k-means, les arbres
+employés et un modèle de classification créé via l’interface C, y compris sur exception ; ils ne constituent pas une certification de tous les algorithmes mlpack.
 
 L’historique est linéaire : nouveaux commits et nouveaux tags de module immuables.
 La version de module `v0.1.0` n’est pas la version C++ amont `4.8.0`.

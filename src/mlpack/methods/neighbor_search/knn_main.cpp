@@ -11,6 +11,7 @@
  * http://www.opensource.org/licenses/BSD-3-Clause for more information.
  */
 #include <mlpack/core.hpp>
+#include <mlpack/core/util/owned_model.hpp>
 
 #undef BINDING_NAME
 #define BINDING_NAME knn
@@ -183,6 +184,8 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
 
   // We either have to load the reference data, or we have to load the model.
   KNNModel* knn;
+  // Propriétaire local jusqu’au transfert vers les paramètres de sortie.
+  std::unique_ptr<std::remove_pointer_t<decltype(knn)>> ownedModel;
 
   const string algorithm = params.Get<string>("algorithm");
   RequireParamInSet<string>(params, "algorithm", { "naive", "single_tree",
@@ -209,7 +212,7 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
         "r-star", "ball", "x", "hilbert-r", "r-plus", "r-plus-plus", "spill",
         "vp", "rp", "max-rp", "ub", "oct" }, true, "unknown tree type");
 
-    knn = new KNNModel();
+    knn = mlpack::util::MakeOwnedModel(ownedModel);
 
     if (treeType == "kd")
       tree = KNNModel::KD_TREE;
@@ -298,7 +301,7 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
         // Clean memory if needed before crashing.
         const size_t dimensions = knn->Dataset().n_rows;
         if (params.Has("reference"))
-          delete knn;
+          ownedModel.reset();
         Log::Fatal << "Query has invalid dimensions(" << queryData.n_rows <<
             "); should be " << dimensions << "!" << endl;
       }
@@ -312,7 +315,7 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
       // Clean memory if needed before crashing.
       const size_t referencePoints = knn->Dataset().n_cols;
       if (params.Has("reference"))
-        delete knn;
+        ownedModel.reset();
       Log::Fatal << "Invalid k: " << k << "; must be greater than 0 and less "
           << "than or equal to the number of reference points ("
           << referencePoints << ")." << endl;
@@ -325,7 +328,7 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
       // Clean memory if needed before crashing.
       const size_t referencePoints = knn->Dataset().n_cols;
       if (params.Has("reference"))
-        delete knn;
+        ownedModel.reset();
       Log::Fatal << "Invalid k: " << k << "; must be less than the number of "
           << "reference points (" << referencePoints << ") if query data has "
           << "not been provided." << endl;
@@ -357,7 +360,7 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
           trueDistances.n_cols != distances.n_cols)
       {
         if (params.Has("reference"))
-          delete knn;
+          ownedModel.reset();
         Log::Fatal << "The true distances file must have the same number of "
             << "values than the set of distances being queried!" << endl;
       }
@@ -381,7 +384,7 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
           trueNeighbors.n_cols != neighbors.n_cols)
       {
         if (params.Has("reference"))
-          delete knn;
+          ownedModel.reset();
         Log::Fatal << "The true neighbors file must have the same number of "
             << "values than the set of neighbors being queried!" << endl;
       }
@@ -395,4 +398,5 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
   }
 
   params.Get<KNNModel*>("output_model") = knn;
+  ownedModel.release();
 }

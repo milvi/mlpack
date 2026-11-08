@@ -10,6 +10,7 @@
  * http://www.opensource.org/licenses/BSD-3-Clause for more information.
  */
 #include <mlpack/core.hpp>
+#include <mlpack/core/util/owned_model.hpp>
 
 #undef BINDING_NAME
 #define BINDING_NAME approx_kfn
@@ -233,11 +234,13 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
 
   // Do the building of a model, if necessary.
   ApproxKFNModel* m;
+  // Propriétaire local jusqu’au transfert vers les paramètres de sortie.
+  std::unique_ptr<std::remove_pointer_t<decltype(m)>> ownedModel;
   arma::mat referenceSet; // This may be used at query time.
   if (params.Has("reference"))
   {
     referenceSet = std::move(params.Get<arma::mat>("reference"));
-    m = new ApproxKFNModel();
+    m = mlpack::util::MakeOwnedModel(ownedModel);
 
     const size_t numTables = (size_t) params.Get<int>("num_tables");
     const size_t numProjections =
@@ -310,14 +313,14 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
 
         if (exactDistances.n_rows != k)
         {
-          delete m;
+          ownedModel.reset();
           Log::Fatal << "The number of rows in the exact distances matrix ("
               << exactDistances.n_rows << " must be equal to k (" << k << ")."
               << std::endl;
         }
         else if (exactDistances.n_cols != referenceSet.n_cols)
         {
-          delete m;
+          ownedModel.reset();
           Log::Fatal << "The number of columns in the exact distances matrix ("
               << exactDistances.n_cols << ") must be equal to the number of "
               << "columns in the reference set (" << referenceSet.n_cols << ")."
@@ -353,4 +356,5 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
   }
 
   params.Get<ApproxKFNModel*>("output_model") = m;
+  ownedModel.release();
 }

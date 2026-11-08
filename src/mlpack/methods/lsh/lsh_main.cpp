@@ -11,6 +11,7 @@
  * http://www.opensource.org/licenses/BSD-3-Clause for more information.
  */
 #include <mlpack/core.hpp>
+#include <mlpack/core/util/owned_model.hpp>
 
 #undef BINDING_NAME
 #define BINDING_NAME lsh
@@ -180,6 +181,8 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
         numTables << " tables (L) with hash width (r): " << hashWidth << endl;
 
   LSHSearch<>* allkann;
+  // Propriétaire local jusqu’au transfert vers les paramètres de sortie.
+  std::unique_ptr<std::remove_pointer_t<decltype(allkann)>> ownedModel;
   if (params.Has("reference"))
   {
     // Workaround: this avoids printing load information twice for the CLI
@@ -188,7 +191,7 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
     // message.
     (void) params.Get<arma::mat>("reference");
 
-    allkann = new LSHSearch<>();
+    allkann = mlpack::util::MakeOwnedModel(ownedModel);
     Log::Info << "Using reference data from "
         << params.GetPrintable<arma::mat>("reference") << "." << endl;
     referenceData = std::move(params.Get<arma::mat>("reference"));
@@ -246,7 +249,7 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
     {
       // Delete the model if needed.
       if (params.Has("reference"))
-        delete allkann;
+        ownedModel.reset();
       Log::Fatal << "The true neighbors file must have the same number of "
           << "values as the set of neighbors being queried!" << endl;
     }
@@ -265,4 +268,5 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
     params.Get<arma::Mat<size_t>>("neighbors") = std::move(neighbors);
   }
   params.Get<LSHSearch<>*>("output_model") = allkann;
+  ownedModel.release();
 }

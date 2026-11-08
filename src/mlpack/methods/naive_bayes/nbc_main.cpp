@@ -13,6 +13,7 @@
  * http://www.opensource.org/licenses/BSD-3-Clause for more information.
  */
 #include <mlpack/core.hpp>
+#include <mlpack/core/util/owned_model.hpp>
 
 #undef BINDING_NAME
 #define BINDING_NAME nbc
@@ -124,9 +125,11 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
 
   // Either we have to train a model, or load a model.
   NBCModel* model;
+  // Propriétaire local jusqu’au transfert vers les paramètres de sortie.
+  std::unique_ptr<std::remove_pointer_t<decltype(model)>> ownedModel;
   if (params.Has("training"))
   {
-    model = new NBCModel();
+    model = mlpack::util::MakeOwnedModel(ownedModel);
     mat trainingData = std::move(params.Get<mat>("training"));
 
     Row<size_t> labels;
@@ -198,4 +201,5 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
   }
 
   params.Get<NBCModel*>("output_model") = model;
+  ownedModel.release();
 }

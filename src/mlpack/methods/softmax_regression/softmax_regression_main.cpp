@@ -9,6 +9,7 @@
  * http://www.opensource.org/licenses/BSD-3-Clause for more information.
  */
 #include <mlpack/core.hpp>
+#include <mlpack/core/util/owned_model.hpp>
 
 #undef BINDING_NAME
 #define BINDING_NAME softmax_regression
@@ -174,9 +175,12 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
   SoftmaxRegression<>* sm = TrainSoftmax<SoftmaxRegression<>>(params, timers,
       maxIterations);
 
+  std::unique_ptr<SoftmaxRegression<>> ownedModel(
+      params.Has("input_model") ? nullptr : sm);
   TestClassifyAcc(params, timers, sm->NumClasses(), *sm);
 
   params.Get<SoftmaxRegression<>*>("output_model") = sm;
+  ownedModel.release();
 }
 
 size_t CalculateNumberOfClasses(const size_t numClasses,
@@ -275,6 +279,8 @@ Model* TrainSoftmax(util::Params& params,
   using namespace mlpack;
 
   Model* sm;
+  // Propriétaire local jusqu’au transfert vers les paramètres de sortie.
+  std::unique_ptr<std::remove_pointer_t<decltype(sm)>> ownedModel;
   if (params.Has("input_model"))
   {
     sm = params.Get<Model*>("input_model");
@@ -297,9 +303,9 @@ Model* TrainSoftmax(util::Params& params,
     const size_t numBasis = 5;
     ens::L_BFGS optimizer(numBasis, maxIterations);
     timers.Start("softmax_regression_optimization");
-    sm = new Model(trainData, trainLabels, numClasses,
+    sm = mlpack::util::MakeOwnedModel(ownedModel, trainData, trainLabels, numClasses,
         params.Get<double>("lambda"), intercept, std::move(optimizer));
     timers.Stop("softmax_regression_optimization");
   }
-  return sm;
+  return ownedModel ? ownedModel.release() : sm;
 }

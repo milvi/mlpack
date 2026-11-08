@@ -10,6 +10,7 @@
  * http://www.opensource.org/licenses/BSD-3-Clause for more information.
  */
 #include <mlpack/core.hpp>
+#include <mlpack/core/util/owned_model.hpp>
 
 #undef BINDING_NAME
 #define BINDING_NAME lars
@@ -149,10 +150,12 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
   ReportIgnoredParam(params, {{ "test", true }}, "output_predictions");
 
   LARS<>* lars;
+  // Propriétaire local jusqu’au transfert vers les paramètres de sortie.
+  std::unique_ptr<std::remove_pointer_t<decltype(lars)>> ownedModel;
   if (params.Has("input"))
   {
     // Initialize the object.
-    lars = new LARS<>(useCholesky, lambda1, lambda2);
+    lars = mlpack::util::MakeOwnedModel(ownedModel, useCholesky, lambda1, lambda2);
     lars->FitIntercept(!noIntercept);
     lars->NormalizeData(!noNormalize);
 
@@ -207,4 +210,5 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
   }
 
   params.Get<LARS<>*>("output_model") = lars;
+  ownedModel.release();
 }

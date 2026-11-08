@@ -1,6 +1,12 @@
 // Vérification native indépendante de Go : exceptions, allocations interrompues et restitutions.
 #include "native_kmeans.h"
 #include <mlpack/core/tree/binary_space_tree.hpp>
+#include <mlpack/bindings/go/capi/io_util.h>
+#include <mlpack/bindings/go/capi/arma_util.h>
+#include <memory>
+extern "C" void mlpackNbc(void*, void*);
+extern "C" const char* milviLastError(void);
+extern "C" void milviClearError(void);
 #include <atomic>
 #include <cstdlib>
 #include <cstring>
@@ -41,7 +47,37 @@ int main()
         centers.data(),labels.data(),&actual,&iterations,&calculations,&inertia,
         &converged,message,sizeof(message));
   };
-  if (call(0) != 0 || call(1) != 0) return 1;
+  std::vector<double> classes(n), wrongTest(3);
+  for (size_t i = 0; i < n; ++i) classes[i] = i % 3;
+  mlpack::Log::Fatal.ignoreInput = true;
+  auto callModel = [&](bool invalidTest) {
+    milviClearError();
+    std::unique_ptr<void, decltype(&mlpackCleanParams)> params(
+        mlpackGetParams("nbc"), mlpackCleanParams);
+    if (!params || *milviLastError()) return 1;
+    std::unique_ptr<void, decltype(&mlpackCleanTimers)> timers(
+        mlpackGetTimers(), mlpackCleanTimers);
+    if (!timers || *milviLastError()) return 1;
+    mlpackToArmaMat(params.get(), "training", data.data(), d, n, false);
+    if (*milviLastError()) return 1;
+    mlpackToArmaUrow(params.get(), "labels", classes.data(), n);
+    if (*milviLastError()) return 1;
+    for (const char* name : {"training", "labels", "output_model"})
+    {
+      mlpackSetPassed(params.get(), name);
+      if (*milviLastError()) return 1;
+    }
+    if (invalidTest)
+    {
+      mlpackToArmaMat(params.get(), "test", wrongTest.data(), 3, 1, false);
+      if (*milviLastError()) return 1;
+      mlpackSetPassed(params.get(), "test");
+      if (*milviLastError()) return 1;
+    }
+    mlpackNbc(params.get(), timers.get());
+    return *milviLastError() ? 1 : 0;
+  };
+  if (call(0) != 0 || call(1) != 0 || callModel(false) != 0 || callModel(true) != 1) return 1;
   const long baseline = liveAllocations;
   size_t rejected = 0;
   // Chaque point d’injection n’échoue qu’une fois ; le déroulement des destructeurs reste possible.
@@ -86,6 +122,22 @@ int main()
       return 4;
     }
   }
+  size_t modelFailures = 0;
+  for (bool invalidTest : {false, true})
+    for (long position = 0; position < 1200; ++position)
+    {
+      failAfter = position;
+      const int status = callModel(invalidTest);
+      failAfter = -1;
+      if (status != 0) ++modelFailures;
+      if (invalidTest && status == 0) return 7;
+      if (liveAllocations != baseline)
+      {
+        std::cerr << "Modèle non restitué : position " << position << ", différence " << liveAllocations-baseline << std::endl;
+        return 8;
+      }
+    }
+  std::cout << "Erreurs et allocations interrompues sur modèle : " << modelFailures << std::endl;
   if (treeSuccesses == 0) return 6;
   std::cout << "Pannes d’affectation/construction d’arbre interceptées : " << treeFailures << std::endl;
   std::cout << "Allocations interrompues interceptées : " << rejected << std::endl;

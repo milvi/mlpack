@@ -10,6 +10,7 @@
  * http://www.opensource.org/licenses/BSD-3-Clause for more information.
  */
 #include <mlpack/core.hpp>
+#include <mlpack/core/util/owned_model.hpp>
 
 #undef BINDING_NAME
 #define BINDING_NAME fastmks
@@ -144,10 +145,12 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
   ReportIgnoredParam(params, {{ "naive", true }}, "single");
 
   FastMKSModel* model;
+  // Propriétaire local jusqu’au transfert vers les paramètres de sortie.
+  std::unique_ptr<std::remove_pointer_t<decltype(model)>> ownedModel;
   arma::mat referenceData;
   if (params.Has("reference"))
   {
-    model = new FastMKSModel();
+    model = mlpack::util::MakeOwnedModel(ownedModel);
     referenceData = std::move(params.Get<arma::mat>("reference"));
 
     Log::Info << "Loaded reference data (" << referenceData.n_rows << " x "
@@ -251,7 +254,7 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
       {
         // Delete the memory, if needed.
         if (params.Has("reference"))
-          delete model;
+          ownedModel.reset();
         throw;
       }
     }
@@ -265,7 +268,7 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
       {
         // Delete the memory, if needed.
         if (params.Has("reference"))
-          delete model;
+          ownedModel.reset();
         throw;
       }
     }
@@ -277,4 +280,5 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
 
   // Save the model.
   params.Get<FastMKSModel*>("output_model") = model;
+  ownedModel.release();
 }

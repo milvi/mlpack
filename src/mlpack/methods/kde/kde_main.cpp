@@ -10,6 +10,7 @@
  * http://www.opensource.org/licenses/BSD-3-Clause for more information.
  */
 #include <mlpack/core.hpp>
+#include <mlpack/core/util/owned_model.hpp>
 
 #undef BINDING_NAME
 #define BINDING_NAME kde
@@ -255,12 +256,14 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
       "or equal to 1");
 
   KDEModel* kde;
+  // Propriétaire local jusqu’au transfert vers les paramètres de sortie.
+  std::unique_ptr<std::remove_pointer_t<decltype(kde)>> ownedModel;
 
   if (params.Has("reference"))
   {
     arma::mat reference = std::move(params.Get<arma::mat>("reference"));
 
-    kde = new KDEModel();
+    kde = mlpack::util::MakeOwnedModel(ownedModel);
 
     // Set KernelType.
     if (kernelStr == "gaussian")
@@ -328,4 +331,5 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
 
   // Save model.
   params.Get<KDEModel*>("output_model") = kde;
+  ownedModel.release();
 }

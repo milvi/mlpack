@@ -11,6 +11,7 @@
  * http://www.opensource.org/licenses/BSD-3-Clause for more information.
  */
 #include <mlpack/core.hpp>
+#include <mlpack/core/util/owned_model.hpp>
 
 #undef BINDING_NAME
 #define BINDING_NAME krann
@@ -166,11 +167,13 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
 
   // We either have to load the reference data, or we have to load the model.
   RAModel* rann;
+  // Propriétaire local jusqu’au transfert vers les paramètres de sortie.
+  std::unique_ptr<std::remove_pointer_t<decltype(rann)>> ownedModel;
   const bool naive = params.Has("naive");
   const bool singleMode = params.Has("single_mode");
   if (params.Has("reference"))
   {
-    rann = new RAModel();
+    rann = mlpack::util::MakeOwnedModel(ownedModel);
 
     // Get all the parameters.
     const string treeType = params.Get<string>("tree_type");
@@ -289,4 +292,5 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
 
   // Save the output model.
   params.Get<RAModel*>("output_model") = rann;
+  ownedModel.release();
 }

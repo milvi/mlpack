@@ -10,6 +10,7 @@
  * http://www.opensource.org/licenses/BSD-3-Clause for more information.
  */
 #include <mlpack/core.hpp>
+#include <mlpack/core/util/owned_model.hpp>
 
 #undef BINDING_NAME
 #define BINDING_NAME preprocess_scale
@@ -128,6 +129,8 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
   arma::mat& input = params.Get<arma::mat>("input");
   arma::mat output;
   ScalingModel* m;
+  // Propriétaire local jusqu’au transfert vers les paramètres de sortie.
+  std::unique_ptr<std::remove_pointer_t<decltype(m)>> ownedModel;
   timers.Start("feature_scaling");
   if (params.Has("input_model"))
   {
@@ -135,7 +138,7 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
   }
   else
   {
-    m = new ScalingModel(params.Get<int>("min_value"),
+    m = mlpack::util::MakeOwnedModel(ownedModel, params.Get<int>("min_value"),
         params.Get<int>("max_value"), params.Get<double>("epsilon"));
 
     if (scalerMethod == "standard_scaler")
@@ -171,7 +174,7 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
     }
     catch (std::exception& e)
     {
-      delete m;
+      ownedModel.reset();
       throw;
     }
   }
@@ -184,7 +187,7 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
   {
     if (!params.Has("input_model"))
     {
-      delete m;
+      ownedModel.reset();
       throw std::runtime_error("Please provide a saved model.");
     }
     m->InverseTransform(input, output);
@@ -196,4 +199,5 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
   timers.Stop("feature_scaling");
 
   params.Get<ScalingModel*>("output_model") = m;
+  ownedModel.release();
 }

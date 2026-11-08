@@ -10,6 +10,7 @@
  * http://www.opensource.org/licenses/BSD-3-Clause for more information.
  */
 #include <mlpack/core.hpp>
+#include <mlpack/core/util/owned_model.hpp>
 
 #undef BINDING_NAME
 #define BINDING_NAME decision_tree
@@ -155,12 +156,14 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& /* timers */)
 
   // Load the model or build the tree.
   DecisionTreeModel* model;
+  // Propriétaire local jusqu’au transfert vers les paramètres de sortie.
+  std::unique_ptr<std::remove_pointer_t<decltype(model)>> ownedModel;
   arma::mat trainingSet;
   arma::Row<size_t> labels;
 
   if (params.Has("training"))
   {
-    model = new DecisionTreeModel();
+    model = mlpack::util::MakeOwnedModel(ownedModel);
     model->info = std::move(std::get<0>(params.Get<TupleType>("training")));
     trainingSet = std::move(std::get<1>(params.Get<TupleType>("training")));
     if (params.Has("labels"))
@@ -277,4 +280,5 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& /* timers */)
 
   // Do we need to save the model?
   params.Get<DecisionTreeModel*>("output_model") = model;
+  ownedModel.release();
 }

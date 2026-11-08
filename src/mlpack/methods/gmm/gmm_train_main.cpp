@@ -10,6 +10,7 @@
  * http://www.opensource.org/licenses/BSD-3-Clause for more information.
  */
 #include <mlpack/core.hpp>
+#include <mlpack/core/util/owned_model.hpp>
 
 #undef BINDING_NAME
 #define BINDING_NAME gmm_train
@@ -189,6 +190,8 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
 
   // Initialize GMM.
   GMM* gmm = NULL;
+  // Propriétaire local jusqu’au transfert vers les paramètres de sortie.
+  std::unique_ptr<std::remove_pointer_t<decltype(gmm)>> ownedModel;
 
   if (params.Has("input_model"))
   {
@@ -223,7 +226,7 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
     // Initialize the GMM if needed.  (We didn't do this earlier, because
     // RequireParamValue() would leak the memory if the check failed.)
     if (!params.Has("input_model"))
-      gmm = new GMM(size_t(gaussians), dataPoints.n_rows);
+      gmm = mlpack::util::MakeOwnedModel(ownedModel, size_t(gaussians), dataPoints.n_rows);
 
     const int samplings = params.Get<int>("samplings");
     const double percentage = params.Get<double>("percentage");
@@ -288,7 +291,7 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
   {
     // Initialize the GMM if needed.
     if (!params.Has("input_model"))
-      gmm = new GMM(size_t(gaussians), dataPoints.n_rows);
+      gmm = mlpack::util::MakeOwnedModel(ownedModel, size_t(gaussians), dataPoints.n_rows);
 
     // Depending on the value of forcePositive and diagonalCovariance, we have
     // to use different types.
@@ -347,4 +350,5 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
   Log::Info << "Log-likelihood of estimate: " << likelihood << "." << endl;
 
   params.Get<GMM*>("output_model") = gmm;
+  ownedModel.release();
 }

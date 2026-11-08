@@ -10,6 +10,7 @@
  * http://www.opensource.org/licenses/BSD-3-Clause for more information.
  */
 #include <mlpack/core.hpp>
+#include <mlpack/core/util/owned_model.hpp>
 
 #undef BINDING_NAME
 #define BINDING_NAME random_forest
@@ -196,13 +197,15 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
   ReportIgnoredParam(params, {{ "training", false }}, "minimum_leaf_size");
 
   RandomForestModel* rfModel;
+  // Propriétaire local jusqu’au transfert vers les paramètres de sortie.
+  std::unique_ptr<std::remove_pointer_t<decltype(rfModel)>> ownedModel;
   // Input model is loaded when we are either doing warm-started training or
   // else we are making predictions only or both.
   if (params.Has("input_model"))
     rfModel = params.Get<RandomForestModel*>("input_model");
   // Handles the case when we are training new forest from scratch.
   else
-    rfModel = new RandomForestModel();
+    rfModel = mlpack::util::MakeOwnedModel(ownedModel);
 
   if (params.Has("training"))
   {
@@ -286,4 +289,5 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
 
   // Save the output model.
   params.Get<RandomForestModel*>("output_model") = rfModel;
+  ownedModel.release();
 }

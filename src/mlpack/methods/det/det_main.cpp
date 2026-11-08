@@ -10,6 +10,7 @@
  * http://www.opensource.org/licenses/BSD-3-Clause for more information.
  */
 #include <mlpack/core.hpp>
+#include <mlpack/core/util/owned_model.hpp>
 
 #undef BINDING_NAME
 #define BINDING_NAME det
@@ -150,6 +151,8 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
 
   // Are we training a DET or loading from file?
   DTree<arma::mat, int>* tree;
+  // Propriétaire local jusqu’au transfert vers les paramètres de sortie.
+  std::unique_ptr<std::remove_pointer_t<decltype(tree)>> ownedModel;
   arma::mat trainingData;
   arma::mat testData;
 
@@ -169,9 +172,9 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
 
     // Obtain the optimal tree.
     timers.Start("det_training");
-    tree = Trainer<arma::mat, int>(trainingData, folds, regularization,
+    tree = mlpack::util::AdoptOwnedModel(ownedModel, Trainer<arma::mat, int>(trainingData, folds, regularization,
                                    maxLeafSize, minLeafSize,
-                                   skipPruning, timers);
+                                   skipPruning, timers));
     timers.Stop("det_training");
 
     // Compute training set estimates, if desired.
@@ -306,4 +309,5 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
 
   // Save the model, if desired.
   params.Get<DTree<arma::mat>*>("output_model") = tree;
+  ownedModel.release();
 }

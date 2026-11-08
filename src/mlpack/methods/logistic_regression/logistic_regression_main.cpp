@@ -10,6 +10,7 @@
  * http://www.opensource.org/licenses/BSD-3-Clause for more information.
  */
 #include <mlpack/core.hpp>
+#include <mlpack/core/util/owned_model.hpp>
 
 #undef BINDING_NAME
 #define BINDING_NAME logistic_regression
@@ -248,11 +249,13 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
 
   // Load the model, if necessary.
   LogisticRegression<>* model;
+  // Propriétaire local jusqu’au transfert vers les paramètres de sortie.
+  std::unique_ptr<std::remove_pointer_t<decltype(model)>> ownedModel;
   if (params.Has("input_model"))
     model = params.Get<LogisticRegression<>*>("input_model");
   else
   {
-    model = new LogisticRegression<>(0, 0);
+    model = mlpack::util::MakeOwnedModel(ownedModel, 0, 0);
 
     // Set the size of the parameters vector, if necessary.
     if (!params.Has("labels"))
@@ -269,7 +272,7 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
     {
       // Clean memory if needed.
       if (!params.Has("input_model"))
-        delete model;
+        ownedModel.reset();
 
       Log::Fatal << "The labels must have the same number of points as the "
           << "training dataset." << endl;
@@ -282,7 +285,7 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
     {
       // Clean memory if needed.
       if (!params.Has("input_model"))
-        delete model;
+        ownedModel.reset();
 
       Log::Fatal << "Can't get responses from training data since it has less "
           << "than 2 rows." << endl;
@@ -299,7 +302,7 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
   {
     // Clean memory if needed.
     if (!params.Has("input_model"))
-      delete model;
+      ownedModel.reset();
 
     Log::Fatal << "The labels must be either 0 or 1, not " << max(responses)
         << "!" << endl;
@@ -363,7 +366,7 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
       // Clean memory if needed.
       const size_t trainingDimensionality = model->Parameters().n_cols - 1;
       if (!params.Has("input_model"))
-        delete model;
+        ownedModel.reset();
 
       Log::Fatal << "Test data dimensionality (" << testSet.n_rows << ") must "
           << "be the same as the dimensionality of the training data ("
@@ -395,4 +398,5 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
   }
 
   params.Get<LogisticRegression<>*>("output_model") = model;
+  ownedModel.release();
 }

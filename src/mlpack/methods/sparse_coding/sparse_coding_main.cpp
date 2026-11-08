@@ -10,6 +10,7 @@
  * http://www.opensource.org/licenses/BSD-3-Clause for more information.
  */
 #include <mlpack/core.hpp>
+#include <mlpack/core/util/owned_model.hpp>
 
 #undef BINDING_NAME
 #define BINDING_NAME sparse_coding
@@ -179,10 +180,12 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
 
   // Do we have an existing model?
   SparseCoding<>* sc;
+  // Propriétaire local jusqu’au transfert vers les paramètres de sortie.
+  std::unique_ptr<std::remove_pointer_t<decltype(sc)>> ownedModel;
   if (params.Has("input_model"))
     sc = params.Get<SparseCoding<>*>("input_model");
   else
-    sc = new SparseCoding<>(0, 0.0);
+    sc = mlpack::util::MakeOwnedModel(ownedModel, 0, 0.0);
 
   if (params.Has("training"))
   {
@@ -224,7 +227,7 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
         const size_t dictAtoms = sc->Dictionary().n_cols;
         const size_t atoms = sc->Atoms();
         if (!params.Has("input_model"))
-          delete sc;
+          ownedModel.reset();
         Log::Fatal << "The initial dictionary has " << dictAtoms
             << " atoms, but the number of atoms was specified to be "
             << atoms << "!" << endl;
@@ -234,7 +237,7 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
       {
         const size_t dim = sc->Dictionary().n_rows;
         if (!params.Has("input_model"))
-          delete sc;
+          ownedModel.reset();
         Log::Fatal << "The initial dictionary has " << dim
             << " dimensions, but the data has " << matX.n_rows << " dimensions!"
             << endl;
@@ -258,7 +261,7 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
     {
       const size_t dim = sc->Dictionary().n_rows;
       if (!params.Has("input_model"))
-        delete sc;
+        ownedModel.reset();
       Log::Fatal << "Model was trained with a dimensionality of "
           << dim << ", but test data '"
           << params.GetPrintable<arma::mat>("test") << "' have a "
@@ -288,4 +291,5 @@ void BINDING_FUNCTION(util::Params& params, util::Timers& timers)
 
   // Save the model.
   params.Get<SparseCoding<>*>("output_model") = sc;
+  ownedModel.release();
 }
