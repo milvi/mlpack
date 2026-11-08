@@ -79,12 +79,13 @@ void PrintGo(util::Params& params,
   // Now we must print the cgo's import libraries and files.
   cout << "/*" << endl;
   cout << "#cgo CFLAGS: -I./capi" << endl;
-  cout << "#cgo LDFLAGS: -L. -lmlpack_go_" << functionName << endl;
   cout << "#include <capi/" << functionName << ".h>" << endl;
   cout << "#include <stdlib.h>" << endl;
   cout << "*/" << endl;
   cout << "import \"C\" " << endl;
   cout << endl;
+
+  cout << "import native \"github.com/milvi/mlpack\"" << endl;
 
   // Then we must print the import of the gonum package.
   for (ParamIter it = parameters.begin(); it != parameters.end(); ++it)
@@ -218,6 +219,8 @@ void PrintGo(util::Params& params,
   cout << ") {" << endl;
 
   // Reset any timers and disable backtraces.
+  cout << "  unlock := native.Acquire()" << endl;
+  cout << "  defer unlock()" << endl;
   cout << "  params := getParams(\"" << bindingName << "\")" << endl;
   cout << "  defer cleanParams(params)" << endl;
   cout << "  timers := getTimers()" << endl;
@@ -251,6 +254,8 @@ void PrintGo(util::Params& params,
       << endl;
   cout << endl;
 
+  cout << "  checkNative()" << endl;
+
   // Do any output processing and return.
   cout << "  " << "// Initialize result variable and get output." << endl;
 
@@ -264,6 +269,7 @@ void PrintGo(util::Params& params,
 
   // Return output parameters.
   cout << "  " << "// Return output(s)." << endl;
+  cout << "  params.complete = true" << endl;
   cout << "  " << "return ";
   for (size_t i = 0; i < outputOptions.size(); ++i)
   {

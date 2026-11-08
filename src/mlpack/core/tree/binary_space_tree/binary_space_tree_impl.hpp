@@ -66,12 +66,24 @@ BinarySpaceTree(
     parentDistance(0), // Parent distance for the root is 0: it has no parent.
     dataset(new MatType(data)) // Copies the dataset.
 {
-  // Do the actual splitting of this node.
-  SplitType<BoundType<DistanceType, ElemType>, MatType> splitter;
-  SplitNode(maxLeafSize, splitter);
+  try
+  {
+    // Do the actual splitting of this node.
+    SplitType<BoundType<DistanceType, ElemType>, MatType> splitter;
+    SplitNode(maxLeafSize, splitter);
 
-  // Create the statistic depending on if we are a leaf or not.
-  stat = StatisticType(*this);
+    // Create the statistic depending on if we are a leaf or not.
+    stat = StatisticType(*this);
+  }
+  catch (...)
+  {
+    // Un constructeur interrompu n’appelle pas le destructeur de cet objet.
+    delete left;
+    delete right;
+    if (parent == nullptr)
+      delete dataset;
+    throw;
+  }
 }
 
 template<typename DistanceType,
@@ -96,17 +108,29 @@ BinarySpaceTree(
     parentDistance(0), // Parent distance for the root is 0: it has no parent.
     dataset(new MatType(data)) // Copies the dataset.
 {
-  // Initialize oldFromNew correctly.
-  oldFromNew.resize(data.n_cols);
-  for (size_t i = 0; i < data.n_cols; ++i)
-    oldFromNew[i] = i; // Fill with unharmed indices.
+  try
+  {
+    // Initialize oldFromNew correctly.
+    oldFromNew.resize(data.n_cols);
+    for (size_t i = 0; i < data.n_cols; ++i)
+      oldFromNew[i] = i; // Fill with unharmed indices.
 
-  // Now do the actual splitting.
-  SplitType<BoundType<DistanceType, ElemType>, MatType> splitter;
-  SplitNode(oldFromNew, maxLeafSize, splitter);
+    // Now do the actual splitting.
+    SplitType<BoundType<DistanceType, ElemType>, MatType> splitter;
+    SplitNode(oldFromNew, maxLeafSize, splitter);
 
-  // Create the statistic depending on if we are a leaf or not.
-  stat = StatisticType(*this);
+    // Create the statistic depending on if we are a leaf or not.
+    stat = StatisticType(*this);
+  }
+  catch (...)
+  {
+    // Un constructeur interrompu n’appelle pas le destructeur de cet objet.
+    delete left;
+    delete right;
+    if (parent == nullptr)
+      delete dataset;
+    throw;
+  }
 }
 
 template<typename DistanceType,
@@ -132,22 +156,34 @@ BinarySpaceTree(
     parentDistance(0), // Parent distance for the root is 0: it has no parent.
     dataset(new MatType(data)) // Copies the dataset.
 {
-  // Initialize the oldFromNew vector correctly.
-  oldFromNew.resize(data.n_cols);
-  for (size_t i = 0; i < data.n_cols; ++i)
-    oldFromNew[i] = i; // Fill with unharmed indices.
+  try
+  {
+    // Initialize the oldFromNew vector correctly.
+    oldFromNew.resize(data.n_cols);
+    for (size_t i = 0; i < data.n_cols; ++i)
+      oldFromNew[i] = i; // Fill with unharmed indices.
 
-  // Now do the actual splitting.
-  SplitType<BoundType<DistanceType, ElemType>, MatType> splitter;
-  SplitNode(oldFromNew, maxLeafSize, splitter);
+    // Now do the actual splitting.
+    SplitType<BoundType<DistanceType, ElemType>, MatType> splitter;
+    SplitNode(oldFromNew, maxLeafSize, splitter);
 
-  // Create the statistic depending on if we are a leaf or not.
-  stat = StatisticType(*this);
+    // Create the statistic depending on if we are a leaf or not.
+    stat = StatisticType(*this);
 
-  // Map the newFromOld indices correctly.
-  newFromOld.resize(data.n_cols);
-  for (size_t i = 0; i < data.n_cols; ++i)
-    newFromOld[oldFromNew[i]] = i;
+    // Map the newFromOld indices correctly.
+    newFromOld.resize(data.n_cols);
+    for (size_t i = 0; i < data.n_cols; ++i)
+      newFromOld[oldFromNew[i]] = i;
+  }
+  catch (...)
+  {
+    // Un constructeur interrompu n’appelle pas le destructeur de cet objet.
+    delete left;
+    delete right;
+    if (parent == nullptr)
+      delete dataset;
+    throw;
+  }
 }
 
 template<typename DistanceType,
@@ -169,12 +205,24 @@ BinarySpaceTree(MatType&& data, const size_t maxLeafSize) :
     parentDistance(0), // Parent distance for the root is 0: it has no parent.
     dataset(new MatType(std::move(data)))
 {
-  // Do the actual splitting of this node.
-  SplitType<BoundType<DistanceType, ElemType>, MatType> splitter;
-  SplitNode(maxLeafSize, splitter);
+  try
+  {
+    // Do the actual splitting of this node.
+    SplitType<BoundType<DistanceType, ElemType>, MatType> splitter;
+    SplitNode(maxLeafSize, splitter);
 
-  // Create the statistic depending on if we are a leaf or not.
-  stat = StatisticType(*this);
+    // Create the statistic depending on if we are a leaf or not.
+    stat = StatisticType(*this);
+  }
+  catch (...)
+  {
+    // Un constructeur interrompu n’appelle pas le destructeur de cet objet.
+    delete left;
+    delete right;
+    if (parent == nullptr)
+      delete dataset;
+    throw;
+  }
 }
 
 template<typename DistanceType,
@@ -199,17 +247,29 @@ BinarySpaceTree(
     parentDistance(0), // Parent distance for the root is 0: it has no parent.
     dataset(new MatType(std::move(data)))
 {
-  // Initialize oldFromNew correctly.
-  oldFromNew.resize(dataset->n_cols);
-  for (size_t i = 0; i < dataset->n_cols; ++i)
-    oldFromNew[i] = i; // Fill with unharmed indices.
+  try
+  {
+    // Initialize oldFromNew correctly.
+    oldFromNew.resize(dataset->n_cols);
+    for (size_t i = 0; i < dataset->n_cols; ++i)
+      oldFromNew[i] = i; // Fill with unharmed indices.
 
-  // Now do the actual splitting.
-  SplitType<BoundType<DistanceType, ElemType>, MatType> splitter;
-  SplitNode(oldFromNew, maxLeafSize, splitter);
+    // Now do the actual splitting.
+    SplitType<BoundType<DistanceType, ElemType>, MatType> splitter;
+    SplitNode(oldFromNew, maxLeafSize, splitter);
 
-  // Create the statistic depending on if we are a leaf or not.
-  stat = StatisticType(*this);
+    // Create the statistic depending on if we are a leaf or not.
+    stat = StatisticType(*this);
+  }
+  catch (...)
+  {
+    // Un constructeur interrompu n’appelle pas le destructeur de cet objet.
+    delete left;
+    delete right;
+    if (parent == nullptr)
+      delete dataset;
+    throw;
+  }
 }
 
 template<typename DistanceType,
@@ -235,22 +295,34 @@ BinarySpaceTree(
     parentDistance(0), // Parent distance for the root is 0: it has no parent.
     dataset(new MatType(std::move(data)))
 {
-  // Initialize the oldFromNew vector correctly.
-  oldFromNew.resize(dataset->n_cols);
-  for (size_t i = 0; i < dataset->n_cols; ++i)
-    oldFromNew[i] = i; // Fill with unharmed indices.
+  try
+  {
+    // Initialize the oldFromNew vector correctly.
+    oldFromNew.resize(dataset->n_cols);
+    for (size_t i = 0; i < dataset->n_cols; ++i)
+      oldFromNew[i] = i; // Fill with unharmed indices.
 
-  // Now do the actual splitting.
-  SplitType<BoundType<DistanceType, ElemType>, MatType> splitter;
-  SplitNode(oldFromNew, maxLeafSize, splitter);
+    // Now do the actual splitting.
+    SplitType<BoundType<DistanceType, ElemType>, MatType> splitter;
+    SplitNode(oldFromNew, maxLeafSize, splitter);
 
-  // Create the statistic depending on if we are a leaf or not.
-  stat = StatisticType(*this);
+    // Create the statistic depending on if we are a leaf or not.
+    stat = StatisticType(*this);
 
-  // Map the newFromOld indices correctly.
-  newFromOld.resize(dataset->n_cols);
-  for (size_t i = 0; i < dataset->n_cols; ++i)
-    newFromOld[oldFromNew[i]] = i;
+    // Map the newFromOld indices correctly.
+    newFromOld.resize(dataset->n_cols);
+    for (size_t i = 0; i < dataset->n_cols; ++i)
+      newFromOld[oldFromNew[i]] = i;
+  }
+  catch (...)
+  {
+    // Un constructeur interrompu n’appelle pas le destructeur de cet objet.
+    delete left;
+    delete right;
+    if (parent == nullptr)
+      delete dataset;
+    throw;
+  }
 }
 
 template<typename DistanceType,
@@ -276,11 +348,23 @@ BinarySpaceTree(
     bound(parent->Dataset().n_rows),
     dataset(&parent->Dataset()) // Point to the parent's dataset.
 {
-  // Perform the actual splitting.
-  SplitNode(maxLeafSize, splitter);
+  try
+  {
+    // Perform the actual splitting.
+    SplitNode(maxLeafSize, splitter);
 
-  // Create the statistic depending on if we are a leaf or not.
-  stat = StatisticType(*this);
+    // Create the statistic depending on if we are a leaf or not.
+    stat = StatisticType(*this);
+  }
+  catch (...)
+  {
+    // Un constructeur interrompu n’appelle pas le destructeur de cet objet.
+    delete left;
+    delete right;
+    if (parent == nullptr)
+      delete dataset;
+    throw;
+  }
 }
 
 template<typename DistanceType,
@@ -307,15 +391,27 @@ BinarySpaceTree(
     bound(parent->Dataset().n_rows),
     dataset(&parent->Dataset())
 {
-  // Hopefully the vector is initialized correctly!  We can't check that
-  // entirely but we can do a minor sanity check.
-  assert(oldFromNew.size() == dataset->n_cols);
+  try
+  {
+    // Hopefully the vector is initialized correctly!  We can't check that
+    // entirely but we can do a minor sanity check.
+    assert(oldFromNew.size() == dataset->n_cols);
 
-  // Perform the actual splitting.
-  SplitNode(oldFromNew, maxLeafSize, splitter);
+    // Perform the actual splitting.
+    SplitNode(oldFromNew, maxLeafSize, splitter);
 
-  // Create the statistic depending on if we are a leaf or not.
-  stat = StatisticType(*this);
+    // Create the statistic depending on if we are a leaf or not.
+    stat = StatisticType(*this);
+  }
+  catch (...)
+  {
+    // Un constructeur interrompu n’appelle pas le destructeur de cet objet.
+    delete left;
+    delete right;
+    if (parent == nullptr)
+      delete dataset;
+    throw;
+  }
 }
 
 template<typename DistanceType,
@@ -343,20 +439,32 @@ BinarySpaceTree(
     bound(parent->Dataset()->n_rows),
     dataset(&parent->Dataset())
 {
-  // Hopefully the vector is initialized correctly!  We can't check that
-  // entirely but we can do a minor sanity check.
-  Log::Assert(oldFromNew.size() == dataset->n_cols);
+  try
+  {
+    // Hopefully the vector is initialized correctly!  We can't check that
+    // entirely but we can do a minor sanity check.
+    Log::Assert(oldFromNew.size() == dataset->n_cols);
 
-  // Perform the actual splitting.
-  SplitNode(oldFromNew, maxLeafSize, splitter);
+    // Perform the actual splitting.
+    SplitNode(oldFromNew, maxLeafSize, splitter);
 
-  // Create the statistic depending on if we are a leaf or not.
-  stat = StatisticType(*this);
+    // Create the statistic depending on if we are a leaf or not.
+    stat = StatisticType(*this);
 
-  // Map the newFromOld indices correctly.
-  newFromOld.resize(dataset->n_cols);
-  for (size_t i = 0; i < dataset->n_cols; ++i)
-    newFromOld[oldFromNew[i]] = i;
+    // Map the newFromOld indices correctly.
+    newFromOld.resize(dataset->n_cols);
+    for (size_t i = 0; i < dataset->n_cols; ++i)
+      newFromOld[oldFromNew[i]] = i;
+  }
+  catch (...)
+  {
+    // Un constructeur interrompu n’appelle pas le destructeur de cet objet.
+    delete left;
+    delete right;
+    if (parent == nullptr)
+      delete dataset;
+    throw;
+  }
 }
 
 /**
@@ -385,40 +493,53 @@ BinarySpaceTree(
     furthestDescendantDistance(other.furthestDescendantDistance),
     minimumBoundDistance(other.minimumBoundDistance),
     // Copy matrix, but only if we are the root.
-    dataset((other.parent == NULL) ? new MatType(*other.dataset) : NULL)
+    dataset((other.parent == NULL && other.dataset != nullptr) ?
+        new MatType(*other.dataset) : other.dataset)
 {
-  // Create left and right children (if any).
-  if (other.Left())
+  try
   {
-    left = new BinarySpaceTree(*other.Left());
-    left->Parent() = this; // Set parent to this, not other tree.
-  }
-
-  if (other.Right())
-  {
-    right = new BinarySpaceTree(*other.Right());
-    right->Parent() = this; // Set parent to this, not other tree.
-  }
-
-  // Propagate matrix, but only if we are the root.
-  if (parent == NULL)
-  {
-    std::queue<BinarySpaceTree*> queue;
-    if (left)
-      queue.push(left);
-    if (right)
-      queue.push(right);
-    while (!queue.empty())
+    // Create left and right children (if any).
+    if (other.Left())
     {
-      BinarySpaceTree* node = queue.front();
-      queue.pop();
-
-      node->dataset = dataset;
-      if (node->left)
-        queue.push(node->left);
-      if (node->right)
-        queue.push(node->right);
+      left = new BinarySpaceTree(*other.Left());
+      left->Parent() = this; // Set parent to this, not other tree.
     }
+
+    if (other.Right())
+    {
+      right = new BinarySpaceTree(*other.Right());
+      right->Parent() = this; // Set parent to this, not other tree.
+    }
+
+    // Propagate matrix, but only if we are the root.
+    if (parent == NULL)
+    {
+      std::queue<BinarySpaceTree*> queue;
+      if (left)
+        queue.push(left);
+      if (right)
+        queue.push(right);
+      while (!queue.empty())
+      {
+        BinarySpaceTree* node = queue.front();
+        queue.pop();
+
+        node->dataset = dataset;
+        if (node->left)
+          queue.push(node->left);
+        if (node->right)
+          queue.push(node->right);
+      }
+    }
+  }
+  catch (...)
+  {
+    // Un constructeur interrompu n’appelle pas le destructeur de cet objet.
+    delete left;
+    delete right;
+    if (parent == nullptr)
+      delete dataset;
+    throw;
   }
 }
 
@@ -441,59 +562,9 @@ operator=(const BinarySpaceTree& other)
   if (this == &other)
     return *this;
 
-  // Freeing memory that will not be used anymore.
-  delete dataset;
-  delete left;
-  delete right;
-
-  left = NULL;
-  right = NULL;
-  parent = other.Parent();
-  begin = other.Begin();
-  count = other.Count();
-  bound = other.bound;
-  stat = other.stat;
-  parentDistance = other.ParentDistance();
-  furthestDescendantDistance = other.FurthestDescendantDistance();
-  minimumBoundDistance = other.MinimumBoundDistance();
-  // Copy matrix, but only if we are the root.
-  dataset = ((other.parent == NULL) ? new MatType(*other.dataset) : NULL);
-
-  // Create left and right children (if any).
-  if (other.Left())
-  {
-    left = new BinarySpaceTree(*other.Left());
-    left->Parent() = this; // Set parent to this, not other tree.
-  }
-
-  if (other.Right())
-  {
-    right = new BinarySpaceTree(*other.Right());
-    right->Parent() = this; // Set parent to this, not other tree.
-  }
-
-  // Propagate matrix, but only if we are the root.
-  if (parent == NULL)
-  {
-    std::queue<BinarySpaceTree*> queue;
-    if (left)
-      queue.push(left);
-    if (right)
-      queue.push(right);
-    while (!queue.empty())
-    {
-      BinarySpaceTree* node = queue.front();
-      queue.pop();
-
-      node->dataset = dataset;
-      if (node->left)
-        queue.push(node->left);
-      if (node->right)
-        queue.push(node->right);
-    }
-  }
-
-  return *this;
+  // Construire d’abord une copie : un échec d’allocation laisse l’original intact.
+  BinarySpaceTree copy(other);
+  return operator=(std::move(copy));
 }
 
 /**
@@ -515,8 +586,12 @@ operator=(BinarySpaceTree&& other)
   if (this == &other)
     return *this;
 
-  // Freeing memory that will not be used anymore.
-  delete dataset;
+  // Les membres susceptibles de lever sont affectés avant le transfert des
+  // pointeurs possédés. Une exception laisse deux propriétaires distincts.
+  bound = std::move(other.bound);
+  stat = std::move(other.stat);
+  if (parent == nullptr)
+    delete dataset;
   delete left;
   delete right;
 
@@ -525,12 +600,12 @@ operator=(BinarySpaceTree&& other)
   right = other.Right();
   begin = other.Begin();
   count = other.Count();
-  bound = std::move(other.bound);
-  stat = std::move(other.stat);
   parentDistance = other.ParentDistance();
   furthestDescendantDistance = other.FurthestDescendantDistance();
   minimumBoundDistance = other.MinimumBoundDistance();
   dataset = other.dataset;
+  if (left) left->parent = this;
+  if (right) right->parent = this;
 
   other.left = NULL;
   other.right = NULL;

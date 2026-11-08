@@ -14,6 +14,7 @@
 
 #include <mlpack/core/util/param_data.hpp>
 #include "get_param.hpp"
+#include "model_memory.hpp"
 #include "get_type.hpp"
 #include "default_param.hpp"
 #include "get_printable_param.hpp"
@@ -84,6 +85,7 @@ class GoOption
     // pointers will be used by both the program that generates the .cpp,
     // the .h, and the .go binding files.
     IO::AddFunction(data.tname, "GetParam", &GetParam<T>);
+    IO::AddFunction(data.tname, "ModelMemory", &ModelMemory<T>);
     IO::AddFunction(data.tname, "GetPrintableParam", &GetPrintableParam<T>);
     IO::AddFunction(data.tname, "DefaultParam", &DefaultParam<T>);
     IO::AddFunction(data.tname, "PrintDefnInput", &PrintDefnInput<T>);

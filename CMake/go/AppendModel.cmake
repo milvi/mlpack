@@ -61,6 +61,7 @@ function(append_model SERIALIZATION_FILE PROGRAM_MAIN_FILE)
         file(APPEND
             "${SERIALIZATION_FILE}"
             "type ${GOMODEL_SAFE_TYPE} struct {\n"
+            "  owner *modelOwner\n"
             "  mem unsafe.Pointer \n"
             "}\n\n"
             "func (m *${GOMODEL_SAFE_TYPE}) alloc"
@@ -69,6 +70,8 @@ function(append_model SERIALIZATION_FILE PROGRAM_MAIN_FILE)
             "  defer freeCString(id)\n"
             "  m.mem = C.mlpackGet${MODEL_SAFE_TYPE}Ptr(params.mem,\n"
             "      id)\n"
+            "  checkNative()\n"
+            "  m.owner = adoptModel(params, m.mem, func(p unsafe.Pointer) { C.mlpackDelete${MODEL_SAFE_TYPE}Ptr(p) })\n"
             "  runtime.KeepAlive(m)\n"
             "}\n\n"
             "func (m *${GOMODEL_SAFE_TYPE}) get"
@@ -78,11 +81,15 @@ function(append_model SERIALIZATION_FILE PROGRAM_MAIN_FILE)
             "func set${MODEL_SAFE_TYPE}(params* params,\n"
             "                           identifier string,\n"
             "                           ptr *${GOMODEL_SAFE_TYPE}) {\n"
+            "  address := ptr.owner.address()\n"
+            "  params.refs = append(params.refs, ptr.owner)\n"
+            "  defer checkNative()\n"
             "  id := C.CString(identifier)\n"
             "  defer freeCString(id)\n"
             "  C.mlpackSet${MODEL_SAFE_TYPE}Ptr(params.mem,\n"
-            "      id, ptr.mem)\n"
-            "}\n\n")
+            "      id, address)\n"
+            "}\n\n"
+            "func (m *${GOMODEL_SAFE_TYPE}) Close() error { return m.owner.Close() }\n\n")
       endif()
     endforeach ()
   endif()

@@ -2,7 +2,6 @@ package mlpack
 
 /*
 #cgo CFLAGS: -I.
-#cgo LDFLAGS: -L${SRCDIR} -lmlpack_go_util
 #include <capi/arma_util.h>
 */
 import "C"
@@ -45,6 +44,7 @@ func compactData(m *mat.Dense) (r, c int, data []float64) {
 }
 
 func gonumToArmaMat(p *params, identifier string, m *mat.Dense, trans bool) {
+	defer checkNative()
 	r, c, data := compactData(m)
 	p.pins.Pin(&data[0])
 	id := C.CString(identifier)
@@ -52,6 +52,7 @@ func gonumToArmaMat(p *params, identifier string, m *mat.Dense, trans bool) {
 	C.mlpackToArmaMat(p.mem, id, (*C.double)(unsafe.Pointer(&data[0])), C.size_t(c), C.size_t(r), C.bool(trans))
 }
 func gonumToArmaUmat(p *params, identifier string, m *mat.Dense) {
+	defer checkNative()
 	r, c, data := compactData(m)
 	id := C.CString(identifier)
 	defer freeCString(id)
@@ -59,6 +60,7 @@ func gonumToArmaUmat(p *params, identifier string, m *mat.Dense) {
 	C.mlpackToArmaUmat(p.mem, id, (*C.double)(unsafe.Pointer(&data[0])), C.size_t(c), C.size_t(r))
 }
 func gonumToArmaVector(p *params, identifier string, m *mat.Dense, kind int) {
+	defer checkNative()
 	r, c, data := compactData(m)
 	if r != 1 && c != 1 {
 		panic("mlpack : une seule ligne ou colonne est requise")
@@ -85,6 +87,7 @@ func gonumToArmaCol(p *params, id string, m *mat.Dense)  { gonumToArmaVector(p, 
 func gonumToArmaUcol(p *params, id string, m *mat.Dense) { gonumToArmaVector(p, id, m, 5) }
 
 func gonumToArmaMatWithInfo(p *params, identifier string, m *matrixWithInfo) {
+	defer checkNative()
 	if m == nil {
 		panic("mlpack : données et informations absentes")
 	}
@@ -101,6 +104,7 @@ func gonumToArmaMatWithInfo(p *params, identifier string, m *matrixWithInfo) {
 
 // La sortie appartient à Go ; le tampon natif reste la propriété de Params.
 func copyArma(p *params, identifier string, kind int) (r, c int, data []float64) {
+	defer checkNative()
 	id := C.CString(identifier)
 	defer freeCString(id)
 	var n int
@@ -129,7 +133,7 @@ func copyArma(p *params, identifier string, kind int) (r, c int, data []float64)
 	default:
 		panic("mlpack : type de conversion inconnu")
 	}
-	if n < 0 || r < 0 || c < 0 || r*c != n {
+	if n < 0 || r < 0 || c < 0 || (r != 0 && c > int(^uint(0)>>1)/r) || r*c != n {
 		panic("mlpack : dimensions natives incohérentes ou trop grandes")
 	}
 	data = make([]float64, n)

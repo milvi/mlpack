@@ -1,5 +1,5 @@
 /**
- * @file bindings/go/mlpack/capi/io_util.hpp
+ * @file bindings/go/capi/io_util.hpp
  * @author Yasmine Dumouchel
  * @author Yashwant Singh
  *

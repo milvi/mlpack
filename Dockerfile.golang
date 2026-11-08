@@ -1,0 +1,20 @@
+FROM ubuntu:26.04
+ARG GO_VERSION=1.27.3
+ARG GO_SHA256=65efbc80fdc1fa2cd2631cad5b481777a68e8725f34e89f50fc6ac714e379b40
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    build-essential libarmadillo-dev libensmallen-dev libcereal-dev ca-certificates curl && \
+    rm -rf /var/lib/apt/lists/*
+RUN curl -fsSL "https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz" -o /tmp/go.tgz && \
+    echo "${GO_SHA256}  /tmp/go.tgz" | sha256sum -c - && \
+    tar -C /usr/local -xzf /tmp/go.tgz && rm /tmp/go.tgz
+ENV PATH=/usr/local/go/bin:$PATH GOMAXPROCS=2 GOFLAGS=-p=2
+RUN useradd --create-home --shell /bin/bash mlpack
+COPY --chown=mlpack:mlpack . /home/mlpack/source
+USER mlpack
+WORKDIR /home/mlpack/source
+RUN go version && g++ --version && dpkg-query -W libarmadillo-dev libensmallen-dev libcereal-dev
+RUN go test -v .
+RUN g++ -std=c++17 -O1 -g -fno-omit-frame-pointer -fsanitize=address,undefined \
+    -fopenmp -DMLPACK_GO_MONOLITHIC -I. -Isrc tests/native_memory.cpp native_kmeans_api.cpp \
+    -larmadillo -o /home/mlpack/native-memory
+CMD ["/home/mlpack/native-memory"]

@@ -81,8 +81,7 @@ template<typename DistanceType,
                   typename TreeMatType> class TreeType>
 DualTreeKMeans<DistanceType, MatType, TreeType>::~DualTreeKMeans()
 {
-  if (tree)
-    delete tree;
+  // Le propriétaire unique libère aussi un arbre partiellement construit.
 }
 
 // Run a single iteration.
@@ -99,8 +98,8 @@ double DualTreeKMeans<DistanceType, MatType, TreeType>::Iterate(
   // Build a tree on the centroids.  This will make a copy if necessary, which
   // is unfortunate, but I don't see a reasonable way around it.
   std::vector<size_t> oldFromNewCentroids;
-  Tree* centroidTree = BuildForcedLeafSizeTree<Tree>(centroids,
-      oldFromNewCentroids);
+  std::unique_ptr<Tree> centroidTree(BuildForcedLeafSizeTree<Tree>(centroids,
+      oldFromNewCentroids));
 
   // Find the nearest neighbors of each of the clusters.  We have to make our
   // own TreeType, which is a little bit abuse, but we know for sure the
@@ -112,21 +111,30 @@ double DualTreeKMeans<DistanceType, MatType, TreeType>::Iterate(
   if (iteration > 0)
   {
     // If the tree maps points, we need an intermediate result matrix.
-    arma::mat* interclusterDistancesTemp = TreeTraits<Tree>::RearrangesDataset ?
-        new arma::mat(1, centroids.n_elem) : &interclusterDistances;
+    arma::mat reorderedDistances;
+    arma::mat& distances = TreeTraits<Tree>::RearrangesDataset ?
+        reorderedDistances : interclusterDistances;
 
     arma::Mat<size_t> closestClusters; // We don't actually care about these.
-    nns.Search(1, closestClusters, *interclusterDistancesTemp);
-    distanceCalculations += nns.BaseCases() + nns.Scores();
+    if (centroids.n_cols > 1)
+    {
+      nns.Search(1, closestClusters, distances);
+      distanceCalculations += nns.BaseCases() + nns.Scores();
+    }
+    else
+    {
+      // Un unique centre n’a aucun autre centre voisin.
+      distances.set_size(1, 1);
+      distances.fill(DBL_MAX);
+    }
 
     // We need to do the unmapping ourselves, if the tree does mapping.
     if (TreeTraits<Tree>::RearrangesDataset)
     {
       for (size_t i = 0; i < interclusterDistances.n_elem; ++i)
         interclusterDistances[oldFromNewCentroids[i]] =
-            (*interclusterDistancesTemp)[i];
+            distances[i];
 
-      delete interclusterDistancesTemp;
     }
 
     UpdateTree(*tree, centroids);
@@ -155,7 +163,16 @@ double DualTreeKMeans<DistanceType, MatType, TreeType>::Iterate(
 
   // Set the number of pruned centroids in the root to 0.
   tree->Stat().Pruned() = 0;
-  traverser.Traverse(*tree, nns.ReferenceTree());
+  try
+  {
+    traverser.Traverse(*tree, nns.ReferenceTree());
+  }
+  catch (...)
+  {
+    // Restaurer tous les enfants avant que le destructeur ne parcoure l’arbre.
+    DecoalesceTree(*tree);
+    throw;
+  }
   distanceCalculations += rules.BaseCases() + rules.Scores();
 
   DecoalesceTree(*tree);
@@ -188,7 +205,6 @@ double DualTreeKMeans<DistanceType, MatType, TreeType>::Iterate(
   }
   distanceCalculations += centroids.n_cols;
 
-  delete centroidTree;
 
   ++iteration;
 

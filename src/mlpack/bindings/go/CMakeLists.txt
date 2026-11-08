@@ -13,7 +13,7 @@ macro (post_go_setup)
   if (BUILD_GO_BINDINGS)
     # Once `GO_MODELS` is populated, generate `models.go`.
     file(APPEND
-        "${CMAKE_BINARY_DIR}/src/mlpack/bindings/go/src/mlpack.org/v1/mlpack/models.go"
+        "${CMAKE_BINARY_DIR}/src/mlpack/bindings/go/src/github.com/milvi/mlpack-go/models.go"
         "*/\n"
         "import \"C\"\n\n"
         "import (\n"
@@ -26,7 +26,7 @@ macro (post_go_setup)
     get_property(MODELS GLOBAL PROPERTY GO_MODELS)
     foreach (models IN LISTS MODELS)
       append_model(
-        "${CMAKE_BINARY_DIR}/src/mlpack/bindings/go/src/mlpack.org/v1/mlpack/models.go"
+        "${CMAKE_BINARY_DIR}/src/mlpack/bindings/go/src/github.com/milvi/mlpack-go/models.go"
          ${models})
     endforeach()
   endif()
@@ -41,7 +41,7 @@ endif ()
 if (BUILD_GO_BINDINGS)
 
   # Gonum will automatically be installed by Go's module support during build.
-  find_package(Go 1.21.0)
+  find_package(Go 1.27.3)
   if (NOT GO_FOUND)
     set(GO_NOT_FOUND_MSG "${GO_NOT_FOUND_MSG}\n    - Go")
   endif ()
@@ -56,7 +56,7 @@ if (BUILD_GO_BINDINGS)
       message(FATAL_ERROR "\nCould not Build Go Bindings; the following modules are not available: ${GO_NOT_FOUND_MSG}")
     endif()
   else ()
-    if (NOT GO_FOUND OR NOT GONUM_FOUND)
+    if (NOT GO_FOUND)
       unset(BUILD_GO_BINDINGS CACHE)
       set(BUILD_GO_SHLIB OFF)
       not_found_return("Not building Go bindings; the following modules are not available: ${GO_NOT_FOUND_MSG}")
@@ -65,12 +65,12 @@ if (BUILD_GO_BINDINGS)
 
   add_custom_target(go)
 
-  # All the bindings will build under "src/mlpack.org/v1/mlpack";  So if user build
+  # All the bindings will build under "src/github.com/milvi/mlpack-go";  So if user build
   # go-bindings from source, then he/she can use the same import path as documented
   # on "mlpack.org" by setting GOPATH=/path/to/mlpack/build/src/mlpack/bindings/go.
   # Create model.go with package definition.
   file(WRITE
-      "${CMAKE_BINARY_DIR}/src/mlpack/bindings/go/src/mlpack.org/v1/mlpack/models.go"
+      "${CMAKE_BINARY_DIR}/src/mlpack/bindings/go/src/github.com/milvi/mlpack-go/models.go"
       "package mlpack"
       "\n\n"
       "/*\n")
@@ -82,6 +82,9 @@ if (BUILD_GO_SHLIB)
   # not a part of mlpack itself.
   set(CGO_SOURCES
     mlpack/arma_util.go
+    mlpack/header_inputs.go
+    mlpack/model_owner.go
+    mlpack/native_error.go
     mlpack/io_util.go
     mlpack/doc.go
     mlpack/numcsv.go
@@ -92,12 +95,12 @@ if (BUILD_GO_SHLIB)
   # These are all the files we need to compile Go bindings for mlpack that are
   # not a part of mlpack itself.
   set(CAPI_SOURCES
-    mlpack/capi/arma_util.h
-    mlpack/capi/io_util.h
+    capi/arma_util.h
+    capi/io_util.h
   )
 
   set(TEST_SOURCES
-    tests/go_binding_test.go
+    tests/go_binding_test.go.in
   )
   add_custom_target(go_shlib ALL DEPENDS mlpack)
   add_custom_target(go_copy ALL DEPENDS mlpack)
@@ -105,24 +108,24 @@ if (BUILD_GO_SHLIB)
   # Copy necessary files after making the mlpack/ directory.
   add_custom_command(TARGET go_copy PRE_BUILD
       COMMAND ${CMAKE_COMMAND} -E make_directory
-          ${CMAKE_BINARY_DIR}/src/mlpack/bindings/go/src/mlpack.org/v1/mlpack/
+          ${CMAKE_BINARY_DIR}/src/mlpack/bindings/go/src/github.com/milvi/mlpack-go/
       COMMAND ${CMAKE_COMMAND} -E make_directory
-          ${CMAKE_BINARY_DIR}/src/mlpack/bindings/go/src/mlpack.org/v1/mlpack/capi/
+          ${CMAKE_BINARY_DIR}/src/mlpack/bindings/go/src/github.com/milvi/mlpack-go/capi/
       COMMAND ${CMAKE_COMMAND} -E make_directory
-          ${CMAKE_BINARY_DIR}/src/mlpack/bindings/go/src/mlpack.org/v1/mlpack/tests/)
+          ${CMAKE_BINARY_DIR}/src/mlpack/bindings/go/src/github.com/milvi/mlpack-go/tests/)
 
   foreach(go_file ${CAPI_SOURCES})
   add_custom_command(TARGET go_copy PRE_BUILD
       COMMAND ${CMAKE_COMMAND} ARGS -E copy_if_different
           ${CMAKE_CURRENT_SOURCE_DIR}/${go_file}
-          ${CMAKE_BINARY_DIR}/src/mlpack/bindings/go/src/mlpack.org/v1/mlpack/capi/)
+          ${CMAKE_BINARY_DIR}/src/mlpack/bindings/go/src/github.com/milvi/mlpack-go/capi/)
   endforeach()
 
   foreach(cgo_file ${CGO_SOURCES})
   add_custom_command(TARGET go_copy PRE_BUILD
       COMMAND ${CMAKE_COMMAND} ARGS -E copy_if_different
           ${CMAKE_CURRENT_SOURCE_DIR}/${cgo_file}
-          ${CMAKE_BINARY_DIR}/src/mlpack/bindings/go/src/mlpack.org/v1/mlpack/)
+          ${CMAKE_BINARY_DIR}/src/mlpack/bindings/go/src/github.com/milvi/mlpack-go/)
   endforeach()
 
   if (BUILD_TESTS AND BUILD_GO_SHLIB)
@@ -130,13 +133,13 @@ if (BUILD_GO_SHLIB)
       add_custom_command(TARGET go_copy PRE_BUILD
           COMMAND ${CMAKE_COMMAND} ARGS -E copy_if_different
               ${CMAKE_CURRENT_SOURCE_DIR}/${test_file}
-              ${CMAKE_BINARY_DIR}/src/mlpack/bindings/go/src/mlpack.org/v1/mlpack/tests/)
+              ${CMAKE_BINARY_DIR}/src/mlpack/bindings/go/src/github.com/milvi/mlpack-go/tests/)
     endforeach ()
   endif ()
 
   add_library(mlpack_go_util SHARED
-          ${CMAKE_SOURCE_DIR}/src/mlpack/bindings/go/mlpack/capi/arma_util.cpp
-          ${CMAKE_SOURCE_DIR}/src/mlpack/bindings/go/mlpack/capi/io_util.cpp)
+          ${CMAKE_SOURCE_DIR}/src/mlpack/bindings/go/capi/arma_util.cpp
+          ${CMAKE_SOURCE_DIR}/src/mlpack/bindings/go/capi/io_util.cpp)
   if (BUILD_SHARED_LIBS)
     target_link_libraries(mlpack_go_util ${MLPACK_LIBRARIES})
   else ()
@@ -147,7 +150,7 @@ if (BUILD_GO_SHLIB)
       -DMLPACK_PRINT_INFO
       -DMLPACK_PRINT_WARN)
   set_target_properties(mlpack_go_util PROPERTIES
-     LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/src/mlpack/bindings/go/src/mlpack.org/v1/mlpack/)
+     LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/src/mlpack/bindings/go/src/github.com/milvi/mlpack-go/)
 
   # Set the include directories correctly.
   get_property(GO_INCLUDE_DIRECTORIES DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
@@ -177,7 +180,7 @@ if (BUILD_GO_BINDINGS)
   file(READ "${CMAKE_CURRENT_SOURCE_DIR}/${directory}/${name}_main.cpp" MAIN_FILE)
   if (MAIN_FILE MATCHES "PARAM_MODEL")
     file(APPEND
-        "${CMAKE_BINARY_DIR}/src/mlpack/bindings/go/src/mlpack.org/v1/mlpack/models.go"
+        "${CMAKE_BINARY_DIR}/src/mlpack/bindings/go/src/github.com/milvi/mlpack-go/models.go"
         "#include <capi/${name}.h>\n")
   endif()
 
@@ -187,13 +190,13 @@ if (BUILD_GO_BINDINGS)
 
   # Create ${name}.h.
   add_custom_command(OUTPUT
-      ${CMAKE_BINARY_DIR}/src/mlpack/bindings/go/src/mlpack.org/v1/mlpack/capi/${name}.h
+      ${CMAKE_BINARY_DIR}/src/mlpack/bindings/go/src/github.com/milvi/mlpack-go/capi/${name}.h
       COMMAND ${CMAKE_COMMAND}
           -DPROGRAM_NAME=${name}
           -DPROGRAM_MAIN_FILE=${CMAKE_CURRENT_SOURCE_DIR}/${directory}/${name}_main.cpp
           -DSOURCE_DIR=${CMAKE_SOURCE_DIR}
           -DGO_IN=${CMAKE_SOURCE_DIR}/src/mlpack/bindings/go/go_method.h.in
-          -DGO_OUT=${CMAKE_BINARY_DIR}/src/mlpack/bindings/go/src/mlpack.org/v1/mlpack/capi/${name}.h
+          -DGO_OUT=${CMAKE_BINARY_DIR}/src/mlpack/bindings/go/src/github.com/milvi/mlpack-go/capi/${name}.h
           -P ${CMAKE_SOURCE_DIR}/CMake/go/ConfigureGoHCPP.cmake
       DEPENDS ${CMAKE_SOURCE_DIR}/src/mlpack/bindings/go/go_method.h.in
               ${CMAKE_SOURCE_DIR}/CMake/go/ConfigureGoHCPP.cmake)
@@ -210,7 +213,7 @@ if (BUILD_GO_BINDINGS)
              ${CMAKE_SOURCE_DIR}/CMake/ConfigureFile.cmake)
 
   add_executable(generate_go_${name}
-      ${CMAKE_BINARY_DIR}/src/mlpack/bindings/go/src/mlpack.org/v1/mlpack/capi/${name}.h
+      ${CMAKE_BINARY_DIR}/src/mlpack/bindings/go/src/github.com/milvi/mlpack-go/capi/${name}.h
       ${CMAKE_BINARY_DIR}/src/mlpack/bindings/go/generate_go_${name}.cpp
       ${CMAKE_SOURCE_DIR}/src/mlpack/bindings/go/print_go.hpp
       ${CMAKE_SOURCE_DIR}/src/mlpack/bindings/go/print_go.cpp)
@@ -224,7 +227,7 @@ if (BUILD_GO_BINDINGS)
   add_custom_command(TARGET generate_go_${name} POST_BUILD
       COMMAND ${CMAKE_COMMAND}
           -DGENERATE_BINDING_PROGRAM=${CMAKE_BINARY_DIR}/bin/generate_go_${name}
-          -DBINDING_OUTPUT_FILE=${CMAKE_BINARY_DIR}/src/mlpack/bindings/go/src/mlpack.org/v1/mlpack/${name}.go
+          -DBINDING_OUTPUT_FILE=${CMAKE_BINARY_DIR}/src/mlpack/bindings/go/src/github.com/milvi/mlpack-go/${name}.go
           -P ${CMAKE_SOURCE_DIR}/CMake/GenerateBinding.cmake)
 
   add_dependencies(go generate_go_${name})
@@ -255,7 +258,7 @@ if(BUILD_GO_SHLIB)
   target_compile_definitions(mlpack_go_${name} PUBLIC
       -DMLPACK_PRINT_INFO -DMLPACK_PRINT_WARN)
   set_target_properties(mlpack_go_${name} PROPERTIES
-      LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/src/mlpack/bindings/go/src/mlpack.org/v1/mlpack/")
+      LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/src/mlpack/bindings/go/src/github.com/milvi/mlpack-go/")
 
 
   install(TARGETS mlpack_go_${name}

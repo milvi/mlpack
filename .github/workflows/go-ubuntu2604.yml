@@ -1,0 +1,46 @@
+name: Ubuntu 26.04 — module Go natif
+on:
+  push:
+    branches: [master, 'codex/**']
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: go2604-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Construire et tester sans privilèges dans Ubuntu 26.04
+        run: docker build --progress=plain -f Dockerfile.golang -t mlpack-natif .
+      - name: Vérifier ASan, UBSan et LSan avec injection de pannes
+        run: >-
+          docker run --rm --cap-add=SYS_PTRACE --user root
+          -e ASAN_OPTIONS=detect_leaks=1:halt_on_error=1
+          -e UBSAN_OPTIONS=halt_on_error=1 mlpack-natif
+
+  publication:
+    needs: integration
+    if: github.event_name == 'push' && github.ref == 'refs/heads/codex/publication-v0.1.0'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Publier le tag immuable après validation
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=v0.1.0
+          if git show-ref --verify --quiet "refs/tags/$version"; then
+            test "$(git rev-parse "$version^{commit}")" = "$GITHUB_SHA"
+          else
+            git tag "$version" "$GITHUB_SHA"
+            git push origin "refs/tags/$version"
+          fi

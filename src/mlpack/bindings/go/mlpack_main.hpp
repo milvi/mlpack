@@ -65,7 +65,7 @@
  * not a specific parameter check should be ignored.
  */
 #define BINDING_IGNORE_CHECK(x) mlpack::bindings::go::IgnoreCheck( \
-    STRINGIFY(BINDING_NAME), x)
+    params, x)
 
 /**
  * BINDING_MIN_LABEL is the minimum value a label can take, as represented in

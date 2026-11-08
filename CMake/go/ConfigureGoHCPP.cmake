@@ -28,6 +28,9 @@ extern void mlpackSet${MODEL_SAFE_TYPE}Ptr(void* params,
                                            const char* identifier,
                                            void* value);
 
+// Détruire explicitement un modèle possédé par Go.
+extern void mlpackDelete${MODEL_SAFE_TYPE}Ptr(void* value);
+
 // Get the pointer to a ${MODEL_TYPE} parameter.
 extern void* mlpackGet${MODEL_SAFE_TYPE}Ptr(void* params,
                                             const char* identifier);
@@ -42,9 +45,13 @@ extern \"C\"  void mlpackSet${MODEL_SAFE_TYPE}Ptr(
     const char* identifier,
     void* value)
 {
+  try {
   util::Params& p = *((util::Params*) params);
+  mlpack::bindings::go::BorrowModel(params, value);
   mlpack::util::SetParamPtr<${MODEL_TYPE}>(p, identifier,
       static_cast<${MODEL_TYPE}*>(value));
+  } catch (const std::exception& error) { MilviSetError(error.what()); }
+  catch (...) { MilviSetError(\"exception C++ inconnue\"); }
 }
 
 // Get the pointer to a ${MODEL_TYPE} parameter.
@@ -52,9 +59,21 @@ extern \"C\" void *mlpackGet${MODEL_SAFE_TYPE}Ptr(
     void* params,
     const char* identifier)
 {
+  try {
   util::Params& p = *((util::Params*) params);
   ${MODEL_TYPE} *modelptr = p.Get<${MODEL_TYPE}*>(identifier);
+  mlpack::bindings::go::ExportModel(params, modelptr);
   return modelptr;
+  } catch (const std::exception& error) { MilviSetError(error.what()); }
+  catch (...) { MilviSetError(\"exception C++ inconnue\"); }
+  return nullptr;
+}
+
+extern \"C\" void mlpackDelete${MODEL_SAFE_TYPE}Ptr(void* value)
+{
+  try { delete static_cast<${MODEL_TYPE}*>(value); }
+  catch (const std::exception& error) { MilviSetError(error.what()); }
+  catch (...) { MilviSetError(\"exception C++ inconnue\"); }
 }
 ")
   endforeach ()

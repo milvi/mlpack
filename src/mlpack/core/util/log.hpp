@@ -98,16 +98,24 @@ void Assert(bool condition,
   #define BASH_CLEAR ""
 #endif
 
+// Le module Go réunit les méthodes dans un même exécutable : les flux doivent
+// partager leur état, y compris lorsque des fonctions inline sont fusionnées.
+#ifdef MLPACK_GO_MONOLITHIC
+  #define MLPACK_LOG_STORAGE inline
+#else
+  #define MLPACK_LOG_STORAGE static
+#endif
+
 #if (defined(DEBUG) || defined(MLPACK_PRINT_DEBUG)) && \
     !defined(MLPACK_NO_PRINT_DEBUG)
-static util::PrefixedOutStream Debug =
+MLPACK_LOG_STORAGE util::PrefixedOutStream Debug =
     util::PrefixedOutStream(MLPACK_COUT_STREAM,
                             BASH_CYAN "[DEBUG] " BASH_CLEAR);
 #else
-static util::NullOutStream Debug = util::NullOutStream();
+MLPACK_LOG_STORAGE util::NullOutStream Debug = util::NullOutStream();
 #endif
 
-static util::PrefixedOutStream Info =
+MLPACK_LOG_STORAGE util::PrefixedOutStream Info =
     util::PrefixedOutStream(MLPACK_COUT_STREAM,
                             BASH_GREEN "[INFO ] " BASH_CLEAR,
 #ifdef MLPACK_PRINT_INFO
@@ -117,7 +125,7 @@ static util::PrefixedOutStream Info =
 #endif
                             false);
 
-static util::PrefixedOutStream Warn =
+MLPACK_LOG_STORAGE util::PrefixedOutStream Warn =
     util::PrefixedOutStream(MLPACK_COUT_STREAM,
                             BASH_YELLOW "[WARN ] " BASH_CLEAR,
 #ifdef MLPACK_PRINT_WARN
@@ -127,7 +135,7 @@ static util::PrefixedOutStream Warn =
 #endif
                             false);
 
-static util::PrefixedOutStream Fatal =
+MLPACK_LOG_STORAGE util::PrefixedOutStream Fatal =
     util::PrefixedOutStream(MLPACK_CERR_STREAM,
                             BASH_RED "[FATAL] " BASH_CLEAR,
 #ifdef MLPACK_SUPPRESS_FATAL
@@ -136,6 +144,8 @@ static util::PrefixedOutStream Fatal =
                             false,
 #endif
                             true /* fatal */);
+
+#undef MLPACK_LOG_STORAGE
 
 } // namespace Log
 } // namespace mlpack

@@ -37,7 +37,7 @@ inline std::string GetBindingName(const std::string& bindingName)
 inline std::string PrintImport()
 {
   return "import (\n"
-      "  \"mlpack.org/v1/mlpack\"\n"
+      "  \"github.com/milvi/mlpack-go\"\n"
       "  \"gonum.org/v1/gonum/mat\"\n"
       ")\n";
 }
@@ -585,6 +585,29 @@ inline bool IgnoreCheck(
   }
 
   return !params.Parameters()[paramName].input;
+}
+
+// Utiliser les paramètres de l’appel, plutôt qu’un nom figé par une macro.
+// Les vérifications inline restent ainsi identiques dans toutes les unités C++.
+inline bool IgnoreCheck(util::Params& params, const std::string& name)
+{
+  const auto found = params.Parameters().find(name);
+  return found != params.Parameters().end() && !found->second.input;
+}
+inline bool IgnoreCheck(util::Params& params,
+    const std::vector<std::string>& constraints)
+{
+  for (const auto& name : constraints)
+    if (IgnoreCheck(params, name)) return true;
+  return false;
+}
+inline bool IgnoreCheck(util::Params& params,
+    const std::vector<std::pair<std::string, bool>>& constraints,
+    const std::string& name)
+{
+  for (const auto& constraint : constraints)
+    if (IgnoreCheck(params, constraint.first)) return true;
+  return IgnoreCheck(params, name);
 }
 
 } // namespace go

@@ -70,12 +70,11 @@ inline HRectBound<
 
   if (dim != other.Dim())
   {
-    // Reallocation is necessary.
-    if (bounds)
-      delete[] bounds;
-
+    // Allouer avant de libérer : l’ancien objet reste valide en cas d’échec.
+    auto* replacement = new RangeType<ElemType>[other.Dim()];
+    delete[] bounds;
+    bounds = replacement;
     dim = other.Dim();
-    bounds = new RangeType<ElemType>[dim];
   }
 
   // Now copy each of the bound values.
@@ -113,6 +112,7 @@ HRectBound<DistanceType, ElemType>::operator=(
 {
   if (this != &other)
   {
+    delete[] bounds;
     bounds = other.bounds;
     minWidth = other.minWidth;
     dim = other.dim;
@@ -554,9 +554,10 @@ HRectBound<DistanceType, ElemType>::operator|=(const MatType& data)
 {
   if (dim == 0)
   {
+    auto* replacement = new RangeType<ElemType>[data.n_rows];
     delete[] bounds;
+    bounds = replacement;
     dim = data.n_rows;
-    bounds = new RangeType<ElemType>[dim];
   }
 
   Log::Assert(data.n_rows == dim);
@@ -585,9 +586,10 @@ HRectBound<DistanceType, ElemType>::operator|=(const HRectBound& other)
 {
   if (dim == 0)
   {
+    auto* replacement = new RangeType<ElemType>[other.dim];
     delete[] bounds;
+    bounds = replacement;
     dim = other.dim;
-    bounds = new RangeType<ElemType>[dim];
   }
 
   Log::Assert(other.dim == dim);

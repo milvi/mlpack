@@ -15,6 +15,7 @@
 #ifndef MLPACK_METHODS_KMEANS_DUAL_TREE_KMEANS_HPP
 #define MLPACK_METHODS_KMEANS_DUAL_TREE_KMEANS_HPP
 
+#include <memory>
 #include <mlpack/core/tree/binary_space_tree.hpp>
 #include <mlpack/methods/neighbor_search/neighbor_search.hpp>
 #include <mlpack/core/tree/cover_tree.hpp>
@@ -81,7 +82,7 @@ class DualTreeKMeans
   //! The original dataset reference.
   const MatType& datasetOrig; // Maybe not necessary.
   //! The tree built on the points.
-  Tree* tree;
+  std::unique_ptr<Tree> tree;
   //! The dataset we are using.
   const MatType& dataset;
   //! The distance metric.
