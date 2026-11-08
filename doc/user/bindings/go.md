@@ -1,3 +1,9 @@
+> Référence des fonctions historiques du fork milvi. Le [quickstart actuel](../../quickstart/go.md)
+> fournit la procédure APT + Go et l’API k-means `Cluster` sur slices.
+> Les modèles opaques partagent leur propriétaire entre alias et proposent
+> `Close() error`. Les erreurs natives deviennent des `panic(error)` dans ces
+> fonctions historiques ; `Cluster` rend directement une valeur `error`.
+
 # mlpack Go binding documentation
 
 ## mlpack overview
@@ -42,7 +48,7 @@ mlpack bindings for Go take and return a restricted set of types, for simplicity
 
 ```go
 import (
-  "mlpack.org/v1/mlpack"
+  "github.com/milvi/mlpack-go"
   "gonum.org/v1/gonum/mat"
 )
 
@@ -140,7 +146,7 @@ _, predictions, _ := mlpack.Adaboost(param)
 
 ```go
 import (
-  "mlpack.org/v1/mlpack"
+  "github.com/milvi/mlpack-go"
   "gonum.org/v1/gonum/mat"
 )
 
@@ -263,7 +269,7 @@ _, neighbors, _ := mlpack.ApproxKfn(param)
 
 ```go
 import (
-  "mlpack.org/v1/mlpack"
+  "github.com/milvi/mlpack-go"
   "gonum.org/v1/gonum/mat"
 )
 
@@ -371,7 +377,7 @@ _, test_predictions, stds := mlpack.BayesianLinearRegression(param)
 
 ```go
 import (
-  "mlpack.org/v1/mlpack"
+  "github.com/milvi/mlpack-go"
   "gonum.org/v1/gonum/mat"
 )
 
@@ -521,7 +527,7 @@ recommendations, _ := mlpack.Cf(param)
 
 ```go
 import (
-  "mlpack.org/v1/mlpack"
+  "github.com/milvi/mlpack-go"
   "gonum.org/v1/gonum/mat"
 )
 
@@ -605,7 +611,7 @@ _, _ := mlpack.Dbscan(input, param)
 
 ```go
 import (
-  "mlpack.org/v1/mlpack"
+  "github.com/milvi/mlpack-go"
   "gonum.org/v1/gonum/mat"
 )
 
@@ -711,7 +717,7 @@ _, predictions, _ := mlpack.DecisionTree(param)
 
 ```go
 import (
-  "mlpack.org/v1/mlpack"
+  "github.com/milvi/mlpack-go"
   "gonum.org/v1/gonum/mat"
 )
 
@@ -789,7 +795,7 @@ This program also can provide density estimates for a set of test points, specif
 
 ```go
 import (
-  "mlpack.org/v1/mlpack"
+  "github.com/milvi/mlpack-go"
   "gonum.org/v1/gonum/mat"
 )
 
@@ -861,7 +867,7 @@ The output matrix is a three-dimensional matrix, where each row indicates an edg
 
 ```go
 import (
-  "mlpack.org/v1/mlpack"
+  "github.com/milvi/mlpack-go"
   "gonum.org/v1/gonum/mat"
 )
 
@@ -955,7 +961,7 @@ This program performs FastMKS using a cover tree.  The base used to build the co
 
 ```go
 import (
-  "mlpack.org/v1/mlpack"
+  "github.com/milvi/mlpack-go"
   "gonum.org/v1/gonum/mat"
 )
 
@@ -1063,7 +1069,7 @@ new_gmm := mlpack.GmmTrain(data2, 6, param)
 
 ```go
 import (
-  "mlpack.org/v1/mlpack"
+  "github.com/milvi/mlpack-go"
   "gonum.org/v1/gonum/mat"
 )
 
@@ -1128,7 +1134,7 @@ samples := mlpack.GmmGenerate(&gmm, 100, param)
 
 ```go
 import (
-  "mlpack.org/v1/mlpack"
+  "github.com/milvi/mlpack-go"
   "gonum.org/v1/gonum/mat"
 )
 
@@ -1191,7 +1197,7 @@ probs := mlpack.GmmProbability(&gmm, points, param)
 
 ```go
 import (
-  "mlpack.org/v1/mlpack"
+  "github.com/milvi/mlpack-go"
   "gonum.org/v1/gonum/mat"
 )
 
@@ -1266,7 +1272,7 @@ Optionally, a pre-created HMM model can be used as a guess for the transition ma
 
 ```go
 import (
-  "mlpack.org/v1/mlpack"
+  "github.com/milvi/mlpack-go"
   "gonum.org/v1/gonum/mat"
 )
 
@@ -1337,7 +1343,7 @@ observations, states := mlpack.HmmGenerate(&hmm, 150, param)
 
 ```go
 import (
-  "mlpack.org/v1/mlpack"
+  "github.com/milvi/mlpack-go"
   "gonum.org/v1/gonum/mat"
 )
 
@@ -1401,7 +1407,7 @@ _ := mlpack.HmmLoglik(seq, &hmm, param)
 
 ```go
 import (
-  "mlpack.org/v1/mlpack"
+  "github.com/milvi/mlpack-go"
   "gonum.org/v1/gonum/mat"
 )
 
@@ -1465,7 +1471,7 @@ states := mlpack.HmmViterbi(obs, &hmm, param)
 
 ```go
 import (
-  "mlpack.org/v1/mlpack"
+  "github.com/milvi/mlpack-go"
   "gonum.org/v1/gonum/mat"
 )
 
@@ -1577,7 +1583,7 @@ _, predictions, class_probs := mlpack.HoeffdingTree(param)
 
 ```go
 import (
-  "mlpack.org/v1/mlpack"
+  "github.com/milvi/mlpack-go"
   "gonum.org/v1/gonum/mat"
 )
 
@@ -1669,7 +1675,7 @@ _ := mlpack.ImageConverter(X, param)
 
 ```go
 import (
-  "mlpack.org/v1/mlpack"
+  "github.com/milvi/mlpack-go"
   "gonum.org/v1/gonum/mat"
 )
 
@@ -1794,7 +1800,7 @@ _, out_data := mlpack.Kde(param)
 
 ```go
 import (
-  "mlpack.org/v1/mlpack"
+  "github.com/milvi/mlpack-go"
   "gonum.org/v1/gonum/mat"
 )
 
@@ -1901,7 +1907,7 @@ transformed := mlpack.KernelPca(input, "gaussian", param)
 
 ```go
 import (
-  "mlpack.org/v1/mlpack"
+  "github.com/milvi/mlpack-go"
   "gonum.org/v1/gonum/mat"
 )
 
@@ -2011,7 +2017,7 @@ final, _ := mlpack.Kmeans(data, 10, param)
 
 ```go
 import (
-  "mlpack.org/v1/mlpack"
+  "github.com/milvi/mlpack-go"
   "gonum.org/v1/gonum/mat"
 )
 
@@ -2125,7 +2131,7 @@ _, test_predictions := mlpack.Lars(param)
 
 ```go
 import (
-  "mlpack.org/v1/mlpack"
+  "github.com/milvi/mlpack-go"
   "gonum.org/v1/gonum/mat"
 )
 
@@ -2219,7 +2225,7 @@ _, X_test_responses := mlpack.LinearRegression(param)
 
 ```go
 import (
-  "mlpack.org/v1/mlpack"
+  "github.com/milvi/mlpack-go"
   "gonum.org/v1/gonum/mat"
 )
 
@@ -2340,7 +2346,7 @@ _, predictions, _ := mlpack.LinearSvm(param)
 
 ```go
 import (
-  "mlpack.org/v1/mlpack"
+  "github.com/milvi/mlpack-go"
   "gonum.org/v1/gonum/mat"
 )
 
@@ -2471,7 +2477,7 @@ _, output, _ := mlpack.Lmnn(letter_recognition, param)
 
 ```go
 import (
-  "mlpack.org/v1/mlpack"
+  "github.com/milvi/mlpack-go"
   "gonum.org/v1/gonum/mat"
 )
 
@@ -2575,7 +2581,7 @@ new_codes, _, _ := mlpack.LocalCoordinateCoding(param)
 
 ```go
 import (
-  "mlpack.org/v1/mlpack"
+  "github.com/milvi/mlpack-go"
   "gonum.org/v1/gonum/mat"
 )
 
@@ -2694,7 +2700,7 @@ _, predictions, _ := mlpack.LogisticRegression(param)
 
 ```go
 import (
-  "mlpack.org/v1/mlpack"
+  "github.com/milvi/mlpack-go"
   "gonum.org/v1/gonum/mat"
 )
 
@@ -2790,7 +2796,7 @@ This program also has many other parameters to control its functionality; see th
 
 ```go
 import (
-  "mlpack.org/v1/mlpack"
+  "github.com/milvi/mlpack-go"
   "gonum.org/v1/gonum/mat"
 )
 
@@ -2868,7 +2874,7 @@ centroids, _ := mlpack.MeanShift(data, param)
 
 ```go
 import (
-  "mlpack.org/v1/mlpack"
+  "github.com/milvi/mlpack-go"
   "gonum.org/v1/gonum/mat"
 )
 
@@ -2964,7 +2970,7 @@ _, predictions, _ := mlpack.Nbc(param)
 
 ```go
 import (
-  "mlpack.org/v1/mlpack"
+  "github.com/milvi/mlpack-go"
   "gonum.org/v1/gonum/mat"
 )
 
@@ -3056,7 +3062,7 @@ By default, the SGD optimizer is used.
 
 ```go
 import (
-  "mlpack.org/v1/mlpack"
+  "github.com/milvi/mlpack-go"
   "gonum.org/v1/gonum/mat"
 )
 
@@ -3152,7 +3158,7 @@ The output is organized such that row i and column j in the neighbors output mat
 
 ```go
 import (
-  "mlpack.org/v1/mlpack"
+  "github.com/milvi/mlpack-go"
   "gonum.org/v1/gonum/mat"
 )
 
@@ -3245,7 +3251,7 @@ The output files are organized such that row i and column j in the neighbors out
 
 ```go
 import (
-  "mlpack.org/v1/mlpack"
+  "github.com/milvi/mlpack-go"
   "gonum.org/v1/gonum/mat"
 )
 
@@ -3335,7 +3341,7 @@ H, W := mlpack.Nmf(V, 10, param)
 
 ```go
 import (
-  "mlpack.org/v1/mlpack"
+  "github.com/milvi/mlpack-go"
   "gonum.org/v1/gonum/mat"
 )
 
@@ -3409,7 +3415,7 @@ data_mod := mlpack.Pca(data, param)
 
 ```go
 import (
-  "mlpack.org/v1/mlpack"
+  "github.com/milvi/mlpack-go"
   "gonum.org/v1/gonum/mat"
 )
 
@@ -3499,7 +3505,7 @@ Note that all of the options may be specified at once: predictions may be calcul
 
 ```go
 import (
-  "mlpack.org/v1/mlpack"
+  "github.com/milvi/mlpack-go"
   "gonum.org/v1/gonum/mat"
 )
 
@@ -3611,7 +3617,7 @@ X_test, _, X_train, _ := mlpack.PreprocessSplit(X, param)
 
 ```go
 import (
-  "mlpack.org/v1/mlpack"
+  "github.com/milvi/mlpack-go"
   "gonum.org/v1/gonum/mat"
 )
 
@@ -3689,7 +3695,7 @@ Y := mlpack.PreprocessBinarize(X, param)
 
 ```go
 import (
-  "mlpack.org/v1/mlpack"
+  "github.com/milvi/mlpack-go"
   "gonum.org/v1/gonum/mat"
 )
 
@@ -3767,7 +3773,7 @@ param.Verbose = true
 
 ```go
 import (
-  "mlpack.org/v1/mlpack"
+  "github.com/milvi/mlpack-go"
   "gonum.org/v1/gonum/mat"
 )
 
@@ -3881,7 +3887,7 @@ X_scaled, _ := mlpack.PreprocessScale(X, param)
 
 ```go
 import (
-  "mlpack.org/v1/mlpack"
+  "github.com/milvi/mlpack-go"
   "gonum.org/v1/gonum/mat"
 )
 
@@ -3950,7 +3956,7 @@ X_output := mlpack.PreprocessOneHotEncoding(X, param)
 
 ```go
 import (
-  "mlpack.org/v1/mlpack"
+  "github.com/milvi/mlpack-go"
   "gonum.org/v1/gonum/mat"
 )
 
@@ -4027,7 +4033,7 @@ ic, _ := mlpack.Radical(X, param)
 
 ```go
 import (
-  "mlpack.org/v1/mlpack"
+  "github.com/milvi/mlpack-go"
   "gonum.org/v1/gonum/mat"
 )
 
@@ -4141,7 +4147,7 @@ _, predictions, _ := mlpack.RandomForest(param)
 
 ```go
 import (
-  "mlpack.org/v1/mlpack"
+  "github.com/milvi/mlpack-go"
   "gonum.org/v1/gonum/mat"
 )
 
@@ -4241,7 +4247,7 @@ The output matrices are organized such that row i and column j in the neighbors 
 
 ```go
 import (
-  "mlpack.org/v1/mlpack"
+  "github.com/milvi/mlpack-go"
   "gonum.org/v1/gonum/mat"
 )
 
@@ -4341,7 +4347,7 @@ _, predictions, _ := mlpack.SoftmaxRegression(param)
 
 ```go
 import (
-  "mlpack.org/v1/mlpack"
+  "github.com/milvi/mlpack-go"
   "gonum.org/v1/gonum/mat"
 )
 

@@ -1,212 +1,58 @@
-# mlpack in Go quickstart guide
+# Démarrage Go du fork milvi
 
-This page describes how you can quickly get started using mlpack from Go and
-gives a few examples of usage, and pointers to deeper documentation.
+Le module utilisateur est `github.com/milvi/mlpack-go`. Son code C++ est téléchargé
+comme une dépendance Go, puis compilé automatiquement par cgo. Les bibliothèques
+mathématiques tierces restent installées par APT.
 
-This quickstart guide is also available for [C++](cpp.md), [Python](python.md),
-[Julia](julia.md), [the command line](cli.md), and [R](r.md).
+## Installer sur Ubuntu 26.04 amd64
 
-## Installing mlpack
-
-Installing the mlpack bindings for Go is somewhat time-consuming as the library
-must be built; you can run the following to add mlpack as a dependency inside of
-a Go module:
+Go 1.27.3 ou une version plus récente doit être installé. Depuis un projet qui
+possède déjà son `go.mod` :
 
 ```sh
-go get -u -d mlpack.org/v1/mlpack
+sudo apt-get update
+sudo apt-get install --no-install-recommends build-essential libarmadillo-dev libensmallen-dev libcereal-dev ca-certificates
+go get github.com/milvi/mlpack-go@v0.1.0
+go build -p 2 ./...
 ```
 
-The Go bindings themselves will then need to be compiled.  Find the mlpack
-directory under `$GOMODCACHE/mlpack.org/v1/mlpack` and run these commands:
+La première compilation des méthodes C++ prend plusieurs minutes. `-p 2` borne
+le nombre de compilations simultanées. Les compilations suivantes réutilisent le
+cache Go standard. Aucun `make install`, patch ou `env.sh` n’est nécessaire.
 
-```sh
-make
-sudo make install
-```
-
-After this, `go run my_code.go` will be able to correctly link against mlpack's
-Go bindings and run.
-
-Building the Go bindings from scratch is a little more in-depth, though.  For
-information on that, follow the instructions in the
-[installation guide](../user/install.md#compile-bindings-manually).
-
-## Simple mlpack quickstart example
-
-As a really simple example of how to use mlpack from Go, let's do some
-simple classification on a subset of the standard machine learning `covertype`
-dataset.  We will first split the dataset into a training set and a testing set,
-then we will train an mlpack random forest on the training data, and finally we will
-print the accuracy of the random forest on the test dataset.
-
-You can copy-paste this code directly into main.go to run it.
+## Un appel k-means
 
 ```go
 package main
 
 import (
-  "mlpack.org/v1/mlpack"
-  "fmt"
+    "fmt"
+    mlpack "github.com/milvi/mlpack-go"
 )
+
 func main() {
-
-  // Download dataset.
-  mlpack.DownloadFile("https://www.mlpack.org/datasets/covertype-small.data.csv.gz",
-                      "data.csv.gz")
-  mlpack.DownloadFile("https://www.mlpack.org/datasets/covertype-small.labels.csv.gz",
-                      "labels.csv.gz")
-
-  // Extract/Unzip the dataset.
-  mlpack.UnZip("data.csv.gz", "data.csv")
-  dataset, _ := mlpack.Load("data.csv")
-
-  mlpack.UnZip("labels.csv.gz", "labels.csv")
-  labels, _ := mlpack.Load("labels.csv")
-
-  // Split the dataset using mlpack.
-  params := mlpack.PreprocessSplitOptions()
-  params.InputLabels = labels
-  params.TestRatio = 0.3
-  params.Verbose = true
-  test, test_labels, train, train_labels :=
-      mlpack.PreprocessSplit(dataset, params)
-
-  // Train a random forest.
-  rf_params := mlpack.RandomForestOptions()
-  rf_params.NumTrees = 10
-  rf_params.MinimumLeafSize = 3
-  rf_params.PrintTrainingAccuracy = true
-  rf_params.Training = train
-  rf_params.Labels = train_labels
-  rf_params.Verbose = true
-  rf_model, _, _ := mlpack.RandomForest(rf_params)
-
-  // Predict the labels of the test points.
-  rf_params_2 := mlpack.RandomForestOptions()
-  rf_params_2.Test = test
-  rf_params_2.InputModel = &rf_model
-  rf_params_2.Verbose = true
-  _, predictions, _ := mlpack.RandomForest(rf_params_2)
-
-  // Now print the accuracy.
-  rows, _ := predictions.Dims()
-  var sum int = 0
-  for i := 0; i < rows; i++ {
-    if (predictions.At(i, 0) == test_labels.At(i, 0)) {
-      sum = sum + 1
+    points := []float64{0, 0, 0, 1, 10, 10, 10, 11}
+    resultat, err := mlpack.Cluster(points, 2, 2, nil)
+    if err != nil {
+        panic(err)
     }
-  }
-  fmt.Print(sum, " correct out of ", rows, " (",
-      (float64(sum) / float64(rows)) * 100, "%).\n")
+    fmt.Println(resultat.Centers, resultat.Labels, resultat.Converged)
 }
 ```
 
-We can see that we achieve reasonably good accuracy on the test dataset (80%+);
-if we use the full `covertype.csv.gz`, the accuracy should increase
-significantly (but training will take longer).
+Une ligne représente un point ; les coordonnées sont contiguës. Par défaut,
+`Cluster` utilise dual-tree avec KD-tree, une graine reproductible, un thread et
+au plus 1 000 itérations. Les entrées restent inchangées et les résultats sont
+des slices Go indépendantes. Aucun objet C++ ne doit être fermé après cet appel.
+Lire `Converged` pour distinguer convergence et arrêt à la limite d’itérations.
 
-It's easy to modify the code above to do more complex things, or to use
-different mlpack learners, or to interface with other machine learning toolkits.
+Gonum v0.17.0 est la version minimale demandée. Une version plus récente requise
+par le projet est utilisée par tous les imports qui partagent ce chemin de
+module. `go get gonum.org/v1/gonum@latest` met explicitement à jour ce choix.
 
-## Using mlpack for movie recommendations
-
-In this example, we will train a collaborative filtering model using mlpack's
-[`cf()`](../user/bindings/go.md#cf) method.
-We will train this on the
-[MovieLens dataset](https://grouplens.org/datasets/movielens/), and then we will
-use the model that we train to give recommendations.
-
-You can copy-paste this code directly into main.go to run it.
-
-```go
-package main
-
-import (
-  "github.com/frictionlessdata/tableschema-go/csv"
-  "mlpack.org/v1/mlpack"
-  "gonum.org/v1/gonum/mat"
-  "fmt"
-)
-func main() {
-
-  // Download dataset.
-  mlpack.DownloadFile("https://www.mlpack.org/datasets/ml-20m/ratings-only.csv.gz",
-                      "ratings-only.csv.gz")
-  mlpack.DownloadFile("https://www.mlpack.org/datasets/ml-20m/movies.csv.gz",
-                      "movies.csv.gz")
-
-  // Extract dataset.
-  mlpack.UnZip("ratings-only.csv.gz", "ratings-only.csv")
-  ratings, _ := mlpack.Load("ratings-only.csv")
-
-  mlpack.UnZip("movies.csv.gz", "movies.csv")
-  table, _ := csv.NewTable(csv.FromFile("movies.csv"), csv.LoadHeaders())
-  movies, _ := table.ReadColumn("title")
-
-  // Split the dataset using mlpack.
-  params := mlpack.PreprocessSplitOptions()
-  params.TestRatio = 0.1
-  params.Verbose = true
-  ratings_test, _, ratings_train, _ := mlpack.PreprocessSplit(ratings, params)
-
-  // Train the model.  Change the rank to increase/decrease the complexity of the
-  // model.
-  cf_params := mlpack.CfOptions()
-  cf_params.Training = ratings_train
-  cf_params.Test = ratings_test
-  cf_params.Rank = 10
-  cf_params.Verbose = true
-  cf_params.Algorithm = "RegSVD"
-  _, cf_model := mlpack.Cf(cf_params)
-
-  // Now query the 5 top movies for user 1.
-  cf_params_2 := mlpack.CfOptions()
-  cf_params_2.InputModel = &cf_model
-  cf_params_2.Recommendations = 10
-  cf_params_2.Query = mat.NewDense(1, 1, []float64{1})
-  cf_params_2.Verbose = true
-  cf_params_2.MaxIterations = 10
-  output, _ := mlpack.Cf(cf_params_2)
-
-  // Get the names of the movies for user 1.
-  fmt.Println("Recommendations for user 1")
-  for i := 0; i < 10; i++ {
-    fmt.Println(i, ":", movies[int(output.At(0 , i))])
-  }
-}
-```
-
-Here is some example output, showing that user 1 seems to have good taste in
-movies:
-
-```
-Recommendations for user 1:
-  0: Casablanca (1942)
-  1: Pan's Labyrinth (Laberinto del fauno, El) (2006)
-  2: Godfather, The (1972)
-  3: Answer This! (2010)
-  4: Life Is Beautiful (La Vita è bella) (1997)
-  5: Adventures of Tintin, The (2011)
-  6: Dark Knight, The (2008)
-  7: Out for Justice (1991)
-  8: Dr. Strangelove or: How I Learned to Stop Worrying and Love the Bomb (1964)
-  9: Schindler's List (1993)
-```
-
-## Next steps with mlpack
-
-Now that you have done some simple work with mlpack, you have seen how it can
-easily plug into a data science workflow in Go.  But the two examples above have
-only shown a little bit of the functionality of mlpack.  Lots of other methods
-are available with different functionality.  A full list of each of these
-methods and full documentation can be found on the following page:
-
- - [mlpack Go binding documentation](../user/bindings/go.md)
-
-You can also use GoDoc to explore the `mlpack` module and its functions; every
-function comes with comprehensive documentation.
-
-Also, mlpack is much more flexible from C++ and allows much greater
-functionality.  So, more complicated tasks are possible if you are willing to
-write C++.  To get started learning about mlpack in C++, the
-[C++ quickstart](cpp.md) is a good resource to visit next.
+Le [guide complet](https://github.com/milvi/mlpack-go) présente les emplacements
+écrits, le cache, les versions, le schéma de compilation et la maintenance.
+Le [rapport](https://github.com/milvi/mlpack-go/blob/master/docs/corrections-et-validation.md)
+contient les mesures sur 100 000 et 1 000 000 points et les contrôles de mémoire.
+Les [fonctions historiques](../user/bindings/go.md) restent disponibles avec leurs
+signatures d’origine ; leurs modèles opaques possèdent `Close() error`.

@@ -1,30 +1,30 @@
-# Propriété mémoire du binding Go corrigé
+# Propriété mémoire du binding Go du fork milvi
 
-Le binding Go doit conserver un propriétaire explicite de chaque allocation.
-Les utilitaires corrigés utilisent Go ≥ 1.21 pour `runtime.Pinner`. La distribution
-[milvi/mlpack-go](https://github.com/milvi/mlpack-go) utilise Go 1.27.3 et conserve
-ses tests de régression et sa recette Ubuntu 26.04.
+Le module `github.com/milvi/mlpack-go` dépend du module natif
+`github.com/milvi/mlpack`. Tous deux demandent Go ≥ 1.27.3. Le [guide natif](../../../README-go-milvi.md)
+et le [rapport de validation](https://github.com/milvi/mlpack-go/blob/master/docs/corrections-et-validation.md)
+décrivent la version publiée et ses preuves.
 
-## Entrées
+## Entrées et sorties
 
-Les matrices Go contiguës sont présentées à Armadillo en inversant les dimensions
-pour passer du stockage par lignes à celui par colonnes. Lorsqu'une vue Gonum a
-un pas supérieur à sa largeur, `compactData` la copie dans un stockage contigu.
-Les données que C++ peut conserver entre appels cgo sont épinglées par le
-`runtime.Pinner` de l'objet `params`. Elles sont désépinglées seulement après
-`mlpackCleanParams`. Les matrices vides ou absentes sont refusées explicitement.
+Les matrices Gonum sont stockées par lignes, Armadillo par colonnes : les
+conversions inversent leurs dimensions. Une vue Gonum non contiguë est d’abord
+compactée. Les données réelles sont **copiées dans une mémoire C++ possédée** ;
+les conversions vers les entiers possèdent également leur résultat. Un modèle
+qui déplace une matrice d’entraînement ne conserve donc aucun pointeur vers Go.
+Le pinning automatique pendant l’appel cgo suffit ; aucun `runtime.Pinner`
+persistant n’est conservé dans les paramètres.
 
-## Sorties
+Les sorties sont copiées vers les tampons Go. Le stockage natif reste possédé
+par ses objets C++ et disparaît avec eux. Les anciens transferts `GetMemory`,
+les getters de tampons non possédés et le setter générique de pointeur brut
+inutilisé sont supprimés. Les dimensions sont échangées en `size_t`, avec
+vérification des dépassements avant les allocations Go.
 
-L'ancien mécanisme `GetMemory` détachait un tampon natif sans propriétaire capable
-de le libérer du côté Go. Il reste disponible pour les anciens clients de l'ABI,
-mais le nouveau wrapper Go ne l'utilise plus.
+`mlpackCopyParamMat` rend `false` pour une longueur incorrecte ou un type invalide.
+L’identifiant de conversion est :
 
-`mlpackCopyParamMat` copie vers un tampon `double` alloué par Go pendant un seul
-appel cgo. Le stockage natif ne change pas de propriétaire et disparaît avec
-`util::Params`. L'identifiant de conversion est :
-
-| `kind` | Type natif |
+| kind | Type natif |
 |---:|---|
 | 0 | `arma::mat` |
 | 1 | `arma::Mat<size_t>` |
@@ -34,56 +34,36 @@ appel cgo. Le stockage natif ne change pas de propriétaire et disparaît avec
 | 5 | `arma::Col<size_t>` |
 | 6 | Matrice du tuple `DatasetInfo, arma::mat` |
 
-La longueur doit correspondre exactement au nombre d'éléments. Le tampon n'est
-jamais conservé après le retour de la fonction. Un pointeur nul avec une longueur
-non nulle, un type invalide ou une exception donne `false`. Une copie vide peut
-recevoir un pointeur nul. Les valeurs de `size_t` sont converties en `double`,
-comme dans l'interface Go existante.
+Les valeurs entières restent des `float64` dans l’interface Gonum historique.
+La nouvelle interface `Cluster` rend directement des étiquettes `[]int` et des
+centres `[]float64`, sans objet natif persistant et sans `Close`.
 
-`mlpackCopyParamVectorInt` applique le même contrat au vecteur d'entiers, avec un
-tampon `long long`. Ces nouvelles fonctions ne retirent aucun symbole historique.
-Leur présence est requise par les nouveaux wrappers Go : il faut distribuer les
-deux parties ensemble.
+## Modèles et erreurs
 
-## Génération et nettoyage
+Les 26 bindings créateurs de modèles utilisent un propriétaire local jusqu’au
+transfert dans les paramètres de sortie. Les entrées fournies comme modèles
+restent empruntées. Les paramètres détruisent les modèles non exportés ; le
+frontend partage ensuite un propriétaire entre les alias d’un modèle exporté.
+`Close` est idempotent et ferme tous les alias. Un registre faible et un nettoyage
+automatique servent de dernier recours lorsque l’utilisateur omet `Close`.
 
-`print_go.cpp` émet les `defer` de nettoyage des paramètres et des chronomètres
-immédiatement après leur création. `AppendModel.cmake` émet une libération pour
-chaque chaîne C temporaire de ses accesseurs. Les utilitaires Go communs libèrent
-aussi toutes leurs chaînes temporaires. Le chemin du module reste
-`mlpack.org/v1/mlpack` dans la source du générateur ; la distribution du fork
-utilise son propre chemin `github.com/milvi/mlpack-go`.
+Les fonctions C interceptent les exceptions dans un tampon borné. Les fonctions
+Go historiques gardent leurs signatures et produisent `panic(error)` ; `Cluster`
+rend `error`. Un verrou commun couvre les appels et leur nettoyage. Chaque chaîne
+C temporaire est libérée dans sa portée.
 
-Pour générer les wrappers, configurer CMake avec `BUILD_GO_BINDINGS=ON`,
-`FORCE_BUILD_GO_BINDINGS=ON`, `BUILD_GO_SHLIB=ON`, puis construire la cible `go`.
-`generate_go_kmeans` permet de vérifier seulement le générateur de k-means.
-Pour utiliser des wrappers déjà générés, `BUILD_GO_BINDINGS=OFF` et
-`BUILD_GO_SHLIB=ON` suffisent à construire les bibliothèques natives.
+## Compilation et maintenance
 
-## Validation et portée
+`tools/generate-native.py` génère les wrappers C++ conservés dans Git et déduplique
+les types de modèles. Les aides Go et les générateurs CMake utilisent le chemin
+`github.com/milvi/mlpack-go`. La procédure utilisateur est celle du
+[quickstart Go](../../quickstart/go.md) : APT puis `go get` et `go build`.
 
-Le patch a été appliqué à l'archive officielle mlpack 4.8.0 et les utilitaires ont
-été recompilés avec GCC 15.2.0 et les dépendances Ubuntu 26.04. Le générateur
-`generate_go_kmeans` a produit exactement le wrapper corrigé distribué ; les
-52 chaînes C des accesseurs de modèles générés ont leur libération différée.
-
-Les tests du dépôt de distribution vérifient l'indépendance des sorties, les vues
-Gonum non contiguës, les conversions usuelles, les vecteurs, k-means et les règles
-de pointeurs avec `GOEXPERIMENT=cgocheck2`. Un diagnostic glibc sur 50 appels de
-100 000 points a donné +2 464 octets natifs après correction, contre +40 081 888
-avant correction. Les détails et les limites du laboratoire sont dans le rapport
-de validation du dépôt de distribution.
-
-La construction intégrale neuve des 47 bibliothèques, sous utilisateur ordinaire
-dans un conteneur Ubuntu 26.04, a aussi
-[réussi dans GitHub Actions](https://github.com/milvi/mlpack-go/actions/runs/41368925523)
-sur le commit de distribution `a4cedd823d9c44d970a1330fe6ef8a2d4e27149c`.
-Les tests ordinaires, les contrôles `cgocheck2`, les tests de mémoire native et
-l'exemple k-means y passent. La variation native du même diagnostic y est de
-+3 920 octets. Ce résultat est distinct de la mesure du laboratoire ci-dessus.
-
-Ce changement ne définit pas encore de contrat général de destruction des modèles
-opaques, de conversion des exceptions d'algorithmes en erreurs Go ou de sûreté
-des appels concurrents. Les anciens accesseurs natifs à transfert de pointeurs
-restent historiques ; les anciens clients qui les appellent ne sont pas corrigés
-par une simple mise à jour de la bibliothèque partagée.
+Les en-têtes imbriqués sont suivis par le cache de Go avec `go:embed`, sans
+conservation de son système de fichiers inutilisé dans l’exécutable. Les en-têtes
+et bibliothèques système APT restent extérieurs à cette clé de cache.
+Les tests vérifient les restitutions, les exceptions, la vie des modèles après
+ramasse-miettes et modification des entrées, et la parité k-means naïf/dual-tree.
+Le pilote `tests/native_memory.cpp` ajoute l’injection de pannes, ASan, UBSan et
+LSan. Ces contrôles ne constituent pas une preuve exhaustive de tous les chemins
+internes de tous les algorithmes.
