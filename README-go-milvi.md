@@ -75,3 +75,11 @@ employés et un modèle de classification créé via l’interface C, y compris 
 
 L’historique est linéaire : nouveaux commits et nouveaux tags de module immuables.
 La version de module `v0.1.0` n’est pas la version C++ amont `4.8.0`.
+
+Les conversions réelles copient maintenant dans des matrices Armadillo possédées.
+Un modèle qui déplace la matrice d’entraînement ne peut donc pas conserver un
+pointeur vers une slice Go. Les conversions entières copient lors du changement
+de type. Les `runtime.Pinner` persistants et le setter générique de pointeur brut
+inutilisé sont retirés : seul l’épinglage automatique pendant chaque appel cgo
+est nécessaire. Les modèles peuvent survivre au ramasse-miettes Go et à une
+modification ultérieure des matrices d’entrée.

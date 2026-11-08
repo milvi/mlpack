@@ -23,7 +23,7 @@ type matrixWithInfo struct {
 func DataAndInfo() *matrixWithInfo { return &matrixWithInfo{} }
 
 // Une vue Gonum avec un pas différent de sa largeur est compactée une fois.
-// Le chemin contigu conserve son stockage initial, épinglé jusqu'à cleanParams.
+// Le chemin contigu évite une copie Go ; le C++ copie pendant l’appel cgo.
 func compactData(m *mat.Dense) (r, c int, data []float64) {
 	if m == nil {
 		panic("mlpack : matrice d'entrée absente")
@@ -46,7 +46,6 @@ func compactData(m *mat.Dense) (r, c int, data []float64) {
 func gonumToArmaMat(p *params, identifier string, m *mat.Dense, trans bool) {
 	defer checkNative()
 	r, c, data := compactData(m)
-	p.pins.Pin(&data[0])
 	id := C.CString(identifier)
 	defer freeCString(id)
 	C.mlpackToArmaMat(p.mem, id, (*C.double)(unsafe.Pointer(&data[0])), C.size_t(c), C.size_t(r), C.bool(trans))
@@ -65,7 +64,6 @@ func gonumToArmaVector(p *params, identifier string, m *mat.Dense, kind int) {
 	if r != 1 && c != 1 {
 		panic("mlpack : une seule ligne ou colonne est requise")
 	}
-	p.pins.Pin(&data[0])
 	id := C.CString(identifier)
 	defer freeCString(id)
 	ptr := (*C.double)(unsafe.Pointer(&data[0]))
@@ -95,7 +93,6 @@ func gonumToArmaMatWithInfo(p *params, identifier string, m *matrixWithInfo) {
 	if len(m.Categoricals) != c {
 		panic("mlpack : une information catégorielle est requise par dimension")
 	}
-	p.pins.Pin(&data[0])
 	id := C.CString(identifier)
 	defer freeCString(id)
 	C.mlpackToArmaMatWithInfo(p.mem, id, (*C.bool)(unsafe.Pointer(&m.Categoricals[0])),

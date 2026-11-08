@@ -240,18 +240,7 @@ void mlpackSetParamVectorStr(void* params,
 /**
  * Set the parameter to the given value, given that the type is a pointer.
  */
-void mlpackSetParamPtr(void* params,
-                       const char* identifier,
-                       double* ptr)
-{
-  try
-  {
-    util::Params& p = *((util::Params*) params);
-    util::SetParamPtr(p, identifier, ptr);
-  }
-  catch (const std::exception& error) { MilviSetError(error.what()); }
-  catch (...) { MilviSetError("exception C++ inconnue"); }
-}
+
 
 /**
  * Check if IO has a specified parameter.

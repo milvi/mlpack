@@ -88,8 +88,8 @@ void mlpackToArmaMat(void* params,
   {
     util::Params& p = *((util::Params*) params);
   
-    // Advanced constructor.
-    arma::mat m(mat, row, col, false, false);
+    // Copie propriétaire : aucun emprunt Go ne survit à cet appel.
+    arma::mat m(mat, row, col, true);
   
     // Transpose if necessary.
     if (transpose)
@@ -139,8 +139,8 @@ void mlpackToArmaRow(void* params,
   {
     util::Params& p = *((util::Params*) params);
   
-    // Advanced constructor.
-    arma::rowvec m(rowvec, elem, false, false);
+    // Copie propriétaire : aucun emprunt Go ne survit à cet appel.
+    arma::rowvec m(rowvec, elem, true);
   
     // Set input parameter with corresponding row in IO.
     SetParam(p, identifier, m);
@@ -185,8 +185,8 @@ void mlpackToArmaCol(void* params,
   {
     util::Params& p = *((util::Params*) params);
   
-    // Advanced constructor.
-    arma::colvec m(colvec, elem, false, false);
+    // Copie propriétaire : aucun emprunt Go ne survit à cet appel.
+    arma::colvec m(colvec, elem, true);
   
     // Set input parameter with corresponding column in IO.
     SetParam(p, identifier, m);
@@ -420,7 +420,7 @@ void mlpackToArmaMatWithInfo(void* params,
         hasCategoricals = true;
     }
   
-    arma::mat m(memptr, rows, cols, false, false);
+    arma::mat m(memptr, rows, cols, true);
   
     // Do we need to find how many categories we have?
     if (hasCategoricals)

@@ -8,13 +8,11 @@ package mlpack
 import "C"
 
 import (
-	"runtime"
 	"unsafe"
 )
 
 type params struct {
 	mem      unsafe.Pointer
-	pins     runtime.Pinner
 	refs     []*modelOwner
 	created  []*modelOwner
 	complete bool
@@ -38,7 +36,7 @@ func cleanParams(p *params) {
 	if p == nil || p.mem == nil {
 		return
 	}
-	// Les vues natives doivent disparaître avant de désépingler leurs données Go.
+	// Les paramètres natifs possèdent leurs données et modèles non exportés.
 	C.mlpackCleanParams(p.mem)
 	p.mem = nil
 	if !p.complete {
@@ -48,7 +46,6 @@ func cleanParams(p *params) {
 	}
 	p.refs = nil
 	p.created = nil
-	p.pins.Unpin()
 }
 func cleanTimers(t *timers) {
 	defer checkNative()
@@ -104,15 +101,6 @@ func setParamString(p *params, identifier, value string) {
 	val := C.CString(value)
 	defer freeCString(val)
 	C.mlpackSetParamString(p.mem, id, val)
-}
-func setParamPtr(p *params, identifier string, ptr unsafe.Pointer) {
-	defer checkNative()
-	if ptr != nil {
-		p.pins.Pin(ptr)
-	}
-	id := C.CString(identifier)
-	defer freeCString(id)
-	C.mlpackSetParamPtr(p.mem, id, (*C.double)(ptr))
 }
 func enableTimers() {
 	defer checkNative()
