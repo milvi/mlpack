@@ -83,3 +83,12 @@ de type. Les `runtime.Pinner` persistants et le setter générique de pointeur b
 inutilisé sont retirés : seul l’épinglage automatique pendant chaque appel cgo
 est nécessaire. Les modèles peuvent survivre au ramasse-miettes Go et à une
 modification ultérieure des matrices d’entrée.
+
+## Publication vérifiée
+
+Le tag `v0.1.0` désigne `cb3d9db1842f20904d24cc01b71dae2ce9f21ded`.
+La [validation Ubuntu 26.04](https://github.com/milvi/mlpack/actions/runs/42460225318)
+a réussi avec Go 1.27.3, GCC 15.2, Armadillo 15.2.1, ensmallen 3.11.0 et cereal
+1.3.2, y compris ASan, UBSan et LSan. Le module téléchargé depuis ce tag a
+également passé les tests du frontend, sans remplacement local de dépendance.
+Les preuves détaillées et les benchmarks sont dans le dépôt utilisateur Go.

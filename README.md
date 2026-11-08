@@ -1,3 +1,8 @@
+> Fork milvi : compilation automatique du C++ par Go et corrections de gestion mémoire.
+> Le [guide français du module natif](README-go-milvi.md) décrit la version publiée,
+> les tests et la maintenance ; le [module utilisateur Go](https://github.com/milvi/mlpack-go)
+> fournit l’installation et l’API k-means sur slices.
+
 <h2 align="center">
   <a href="https://mlpack.org"><img src="https://cdn.jsdelivr.net/gh/mlpack/mlpack.org@e7d36ed8/mlpack-black.svg" style="background-color:rgba(0,0,0,0);" height=230 alt="mlpack: a fast, header-only machine learning library"></a>
   <br>a fast, header-only machine learning library<br>
