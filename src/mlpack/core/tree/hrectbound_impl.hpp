@@ -714,19 +714,6 @@ inline ElemType HRectBound<DistanceType, ElemType>::Diameter() const
     return d;
 }
 
-//! Serialize the bound object.
-template<typename DistanceType, typename ElemType>
-template<typename Archive>
-void HRectBound<DistanceType, ElemType>::serialize(
-    Archive& ar,
-    const uint32_t /* version */)
-{
-  // We can't serialize a raw array directly, so wrap it.
-  ar(CEREAL_POINTER_ARRAY(bounds, dim));
-  ar(CEREAL_NVP(minWidth));
-  ar(CEREAL_NVP(distance));
-}
-
 } // namespace mlpack
 
 #endif // MLPACK_CORE_TREE_HRECTBOUND_IMPL_HPP

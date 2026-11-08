@@ -234,11 +234,6 @@ class HRectBound
    */
   ElemType Diameter() const;
 
-  /**
-   * Serialize the bound object.
-   */
-  template<typename Archive>
-  void serialize(Archive& ar, const uint32_t version);
 
  private:
   //! The dimensionality of the bound.

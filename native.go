@@ -1,45 +1,24 @@
-// Package native compile le C++ mlpack et son interface C avec cgo.
-// Les consommateurs utilisent normalement github.com/milvi/mlpack-go.
+// Package native compile uniquement k-means et ses dépendances C++ avec cgo.
+// Les consommateurs utilisent github.com/milvi/mlpack-go.
 package native
 
 /*
 #cgo CXXFLAGS: -std=c++17 -O3 -DNDEBUG -fopenmp -I${SRCDIR}/src -DMLPACK_GO_MONOLITHIC
 #cgo !mlpack_debug CXXFLAGS: -g0
 #cgo LDFLAGS: -larmadillo -lstdc++ -fopenmp
-#include <stddef.h>
-const char* milviLastError(void);
-void milviClearError(void);
 */
 import "C"
 
 import (
 	"embed"
-	"errors"
 	"sync"
 )
 
+// Le verrou protège les réglages OpenMP et les journaux pendant un appel.
 var calls sync.Mutex
 
-// Acquire sérialise les appels qui utilisent les réglages globaux de mlpack.
-// La fonction rendue doit être différée jusqu’après le nettoyage natif.
-func Acquire() func() {
-	calls.Lock()
-	C.milviClearError()
-	return calls.Unlock
-}
-
-// Error récupère une exception interceptée à la frontière C, puis l’efface.
-func Error() error {
-	message := C.GoString(C.milviLastError())
-	C.milviClearError()
-	if message == "" {
-		return nil
-	}
-	return errors.New(message)
-}
-
-// Le cache de go build suit aussi les en-têtes C++ imbriqués.
-// La variable inutilisée est éliminée de l’exécutable par l’éditeur de liens.
+// Les sources imbriquées font partie de la clé du cache de Go.
+// Le système de fichiers inutilisé est éliminé au lien.
 //
-//go:embed src/mlpack.hpp src/mlpack
+//go:embed src/mlpack
 var _ embed.FS

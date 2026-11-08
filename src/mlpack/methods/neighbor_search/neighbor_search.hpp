@@ -419,9 +419,6 @@ class NeighborSearch
   //! Modify the reference tree.
   Tree& ReferenceTree() { return *referenceTree; }
 
-  //! Serialize the NeighborSearch model.
-  template<typename Archive>
-  void serialize(Archive& ar, const uint32_t version);
 
  private:
   // Permutations of reference points during tree building.
@@ -459,43 +456,8 @@ class NeighborSearch
 
 } // namespace mlpack
 
-// The CEREAL_TEMPLATE_CLASS_VERSION() macro does not work with template
-// template parameters so we write it manually.
-namespace cereal {
-namespace detail {
-
-template<typename SortPolicy,
-         typename DistanceType,
-         typename MatType,
-         template<typename TreeDistanceType,
-                  typename TreeStatType,
-                  typename TreeMatType> class TreeType,
-         template<typename RuleType> class DualTreeTraversalType,
-         template<typename RuleType> class SingleTreeTraversalType>
-struct Version<mlpack::NeighborSearch<SortPolicy, DistanceType, MatType,
-    TreeType, DualTreeTraversalType, SingleTreeTraversalType>>
-{
-  static std::uint32_t registerVersion()
-  {
-    ::cereal::detail::StaticObject<Versions>::getInstance().mapping.emplace(
-        std::type_index(typeid(mlpack::NeighborSearch<SortPolicy, DistanceType,
-        MatType, TreeType, DualTreeTraversalType,
-        SingleTreeTraversalType>)).hash_code(), 1);
-    return 1;
-  }
-
-  static inline const std::uint32_t version = registerVersion();
-
-  static void unused() { (void) version; }
-}; /* end Version */
-
-} // namespace detail
-} // namespace cereal
-
 // Include implementation.
 #include "neighbor_search_impl.hpp"
 
-// Include convenience typedefs.
-#include "typedef.hpp"
 
 #endif

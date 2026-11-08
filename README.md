@@ -1,214 +1,80 @@
-> Fork milvi : compilation automatique du C++ par Go et corrections de gestion mémoire.
-> Le [guide français du module natif](README-go-milvi.md) décrit la version publiée,
-> les tests et la maintenance ; le [module utilisateur Go](https://github.com/milvi/mlpack-go)
-> fournit l’installation et l’API k-means sur slices.
+# K-means C++ compilé automatiquement par Go
 
-<h2 align="center">
-  <a href="https://mlpack.org"><img src="https://cdn.jsdelivr.net/gh/mlpack/mlpack.org@e7d36ed8/mlpack-black.svg" style="background-color:rgba(0,0,0,0);" height=230 alt="mlpack: a fast, header-only machine learning library"></a>
-  <br>a fast, header-only machine learning library<br>
-</h2>
+Branche `codex/kmeans-only`, préversion `v0.2.0-kmeans.1` du module
+`github.com/milvi/mlpack`. Le code est extrait de mlpack C++ 4.8.0.
+Le module utilisateur est [`github.com/milvi/mlpack-go`](https://github.com/milvi/mlpack-go/tree/codex/kmeans-only).
 
-<h5 align="center">
-  <a href="https://mlpack.org">Home</a> |
-  <a href="https://www.mlpack.org/download.html">Download</a> |
-  <a href="https://www.mlpack.org/doc/index.html">Documentation</a> |
-  <a href="https://www.mlpack.org/questions.html">Help</a>
-</h5>
+## Contenu conservé
 
-<p align="center">
-  <a href="https://github.com/mlpack/mlpack/actions/workflows/ci.yml"><img alt="GitHub Actions CI" src="https://github.com/mlpack/mlpack/actions/workflows/ci.yml/badge.svg"></a>
-  <a href="https://opensource.org/license/BSD-3-Clause"><img src="https://img.shields.io/badge/License-BSD%203--Clause-blue.svg?style=flat-square" alt="License"></a>
-  <a href="https://numfocus.org/donate-to-mlpack"><img src="https://img.shields.io/badge/sponsored%20by-NumFOCUS-orange.svg?style=flat-square&colorA=E1523D&colorB=007D8A" alt="NumFOCUS"></a>
-</p>
+- Une seule unité C++ : `native_kmeans_api.cpp`, une seule fonction C : `milviKmeans`.
+- K-means dual-tree avec KD-tree, bornes rectangulaires et recherche exacte de
+  voisins nécessaire aux itérations et à l’affectation finale.
+- K-means naïf comme référence numérique, accessible par le même appel.
+- 55 en-têtes : dépendances exactes du calcul et du pilote mémoire, vérifiées
+  par le préprocesseur en modes normal et debug.
 
-<p align="center">
-  <em>
-    Download:
-    <a href="https://www.mlpack.org/files/mlpack-4.8.0.tar.gz">current stable version (4.8.0)</a>
-  </em>
-</p>
+Les autres méthodes, bindings, générateurs, modèles persistants, chargeurs de
+fichiers, autres arbres et infrastructures CMake sont retirés. La sérialisation
+est retirée des classes conservées : cereal et ensmallen ne sont plus requis.
+Les copyrights et la licence des sources conservées restent présents.
 
-**mlpack** is an intuitive, fast, and flexible header-only C++ machine learning
-library with bindings to other languages.  It is meant to be a machine learning
-analog to LAPACK, and aims to implement a wide array of machine learning methods
-and functions as a "swiss army knife" for machine learning researchers.
+## Construction sur Ubuntu 26.04
 
-mlpack's lightweight C++ implementation makes it ideal for deployment and
-production environments; but it can also be used for interactive prototyping via
-C++ notebooks.
-
-In addition to its powerful C++ interface, mlpack also provides command-line
-programs, Python bindings, Julia bindings, Go bindings and R bindings.
-
-***Quick links:***
-
- - Quickstart guides: [C++](doc/quickstart/cpp.md),
-   [CLI](doc/quickstart/cli.md), [Python](doc/quickstart/python.md),
-   [R](doc/quickstart/r.md), [Julia](doc/quickstart/julia.md),
-   [Go](doc/quickstart/go.md)
- - [mlpack homepage](https://www.mlpack.org/)
- - [mlpack documentation](https://www.mlpack.org/doc/index.html)
- - [Examples repository](https://github.com/mlpack/examples/)
- - [Tutorials](doc/user/tutorials.md)
- - [Development Site (Github)](https://github.com/mlpack/mlpack/)
-
-[//]: # (numfocus-fiscal-sponsor-attribution)
-
-mlpack uses an [open governance model](./GOVERNANCE.md) and is fiscally
-sponsored by [NumFOCUS](https://numfocus.org/).  Consider making a
-[tax-deductible donation](https://numfocus.org/donate-to-mlpack) to help the
-project pay for developer time, professional services, travel, workshops, and a
-variety of other needs.
-
-<div align="center">
-  <a href="https://numfocus.org/">
-    <img height="60"
-         src="https://raw.githubusercontent.com/numfocus/templates/master/images/numfocus-logo.png"
-         align="middle"
-         alt="NumFOCUS logo">
-  </a>
-</div>
-<br>
-
-## 0. Contents
-
- 1. [Citation details](#1-citation-details)
- 2. [Dependencies](#2-dependencies)
- 3. [Installation](#3-installation)
- 4. [Usage from C++](#4-usage-from-c)
-     1. [Reducing compile time](#41-reducing-compile-time)
- 5. [Building mlpack's test suite](#5-building-mlpacks-test-suite)
- 6. [Further resources](#6-further-resources)
-
-## 1. Citation details
-
-If you use mlpack in your research or software, please cite mlpack using the
-citation below (given in BibTeX format):
-
-    @article{mlpack2023,
-        title     = {mlpack 4: a fast, header-only C++ machine learning library},
-        author    = {Ryan R. Curtin and Marcus Edel and Omar Shrit and 
-                     Shubham Agrawal and Suryoday Basak and James J. Balamuta and 
-                     Ryan Birmingham and Kartik Dutt and Dirk Eddelbuettel and 
-                     Rishabh Garg and Shikhar Jaiswal and Aakash Kaushik and 
-                     Sangyeon Kim and Anjishnu Mukherjee and Nanubala Gnana Sai and 
-                     Nippun Sharma and Yashwant Singh Parihar and Roshan Swain and 
-                     Conrad Sanderson},
-        journal   = {Journal of Open Source Software},
-        volume    = {8},
-        number    = {82},
-        pages     = {5026},
-        year      = {2023},
-        doi       = {10.21105/joss.05026},
-        url       = {https://doi.org/10.21105/joss.05026}
-    }
-
-Citations are beneficial for the growth and improvement of mlpack.
-
-## 2. Dependencies
-
-**mlpack** requires the following additional dependencies:
-
- - C++17 compiler
- - [Armadillo](https://arma.sourceforge.net)      &nbsp;&emsp;>= 10.8
- - [ensmallen](https://ensmallen.org)      &emsp;>= 2.10.0
- - [cereal](http://uscilab.github.io/cereal/)         &ensp;&nbsp;&emsp;&emsp;>= 1.1.2
-
-mlpack bundles the [STB](https://github.com/nothings/stb),
-[httplib](https://github.com/yhirose/cpp-httplib/tree/master), and
-[`dr_libs`](https://github.com/mackron/dr_libs) header-only libraries to
-provide image loading support, dataset download, and audio loading support,
-respectively. If you prefer to use versions available on your system, see
-[the compilation options](doc/user/compile.md#configuring-mlpack-with-compile-time-definitions)
-
-If you are compiling Armadillo by hand, ensure that LAPACK and BLAS are enabled.
-
-## 3. Installation
-
-Detailed installation instructions can be found on the
-[Installing mlpack](doc/user/install.md) page.
-
-## 4. Usage from C++
-
-Once headers are installed with `make install`, using mlpack in an application
-consists only of including it.  So, your program should include mlpack:
-
-```c++
-#include <mlpack.hpp>
-```
-
-and when you link, be sure to link against Armadillo.  If your example program
-is `my_program.cpp`, your compiler is GCC, and you would like to compile with
-OpenMP support (recommended) and optimizations, compile like this:
+Go 1.27.3 ou ultérieur et cgo activé ; seuls ces paquets de développement sont nécessaires :
 
 ```sh
-g++ -O3 -std=c++17 -o my_program my_program.cpp -larmadillo -fopenmp
+sudo apt-get update
+sudo apt-get install --no-install-recommends build-essential libarmadillo-dev ca-certificates
 ```
 
-Note that if you want to serialize (save or load) neural networks, you should
-add `#define MLPACK_ENABLE_ANN_SERIALIZATION` before including `<mlpack.hpp>`.
-If you don't define `MLPACK_ENABLE_ANN_SERIALIZATION` and your code serializes a
-neural network, a compilation error will occur.
+Le consommateur importe le module utilisateur ; `go build` compile ce module
+natif et réutilise ensuite le cache Go standard. Les en-têtes sous `src/mlpack`
+participent au cache grâce à `go:embed`. Le système de fichiers inutilisé est
+éliminé du binaire. Après modification des bibliothèques ou en-têtes APT,
+utiliser `go build -a ./...` pour forcer leur prise en compte.
 
-`MLPACK_ENABLE_ANN_SERIALIZATION` allows you to serialize networks using
-`arma::mat` as their matrix type. You can also define
-`MLPACK_ENABLE_ANN_SERIALIZATION_FMAT` to serialize networks using `arma::fmat`.
+## Propriété mémoire et erreurs
 
-***Warning:*** older versions of OpenBLAS (0.3.26 and older) compiled to use
-pthreads may use too many threads for computation, causing significant slowdown.
-OpenBLAS versions compiled with OpenMP do not suffer from this issue.  See the
-[test build guide](doc/user/install.md#build-tests) for more details and simple
-workarounds.
+`KMeans` reçoit des slices Go et fait un seul appel C. Les données d’entrée sont
+copiées côté C++ avant tout réordonnancement. Les centres et étiquettes sont
+écrits dans des slices appartenant à Go ; aucun pointeur Go ni objet C++ ne survit
+au calcul. Aucun `Close` n’est nécessaire.
 
-See also:
+Les propriétaires uniques des arbres, le nettoyage des constructeurs interrompus,
+les affectations sûres des arbres et des bornes, ainsi que la restauration des
+enfants masqués sur exception sont conservés. Le k-means naïf intercepte ses
+exceptions dans la région OpenMP et les relance sur le thread appelant. La
+frontière C intercepte les exceptions et remplit un message borné ; Go rend
+`error`. Un verrou protège les réglages partagés et ceux-ci sont restaurés au retour.
 
- * the [test program compilation section](doc/user/install.md#compiling-a-test-program)
-   of the installation documentation,
- * the [C++ quickstart](doc/quickstart/cpp.md), and
- * the [examples repository](https://github.com/mlpack/examples) repository for
-   some examples of mlpack applications in C++, with corresponding `Makefile`s.
+Les centres vides restent fixes pendant les itérations, puis sont retirés à la
+fin sauf option contraire. Les étiquettes sont renumérotées et correspondent à
+l’ordre initial des points. `Converged == false` indique que le budget d’itérations
+est atteint ; il faut examiner ce champ même si `error` est nul.
 
-### 4.1. Reducing compile time
+## Vérifications
 
-mlpack is a template-heavy library, and if care is not used, compilation time of
-a project can be very high.  Fortunately, there are a number of ways to reduce
-compilation time:
+```sh
+python3 tools/check-source.py
+go test -timeout 90s ./...
+```
 
- * Include individual headers, like `<mlpack/methods/decision_tree.hpp>`, if you
-   are only using one component, instead of `<mlpack.hpp>`.  This reduces the
-   amount of work the compiler has to do.
+`tools/check-source.py` contrôle les inclusions, l’absence de dépendance retirée,
+une seule unité de production et l’absence d’en-tête superflu. Le pilote
+`tests/native_memory.cpp` interrompt chaque allocation à tour de rôle et vérifie
+le retour exact au nombre initial de `new` actifs après chaque scénario k-means
+ou arbre. Il couvre aussi les copies et déplacements d’arbres et de bornes.
 
- * Only use the `MLPACK_ENABLE_ANN_SERIALIZATION` definition if you are
-   serializing neural networks in your code.  When this define is enabled,
-   compilation time will increase significantly, as the compiler must generate
-   code for every possible type of layer.  (The large amount of extra
-   compilation overhead is why this is not enabled by default.)
+Le [Dockerfile](Dockerfile.golang) et le [workflow](.github/workflows/go-ubuntu2604.yml)
+exécutent ces contrôles sur Ubuntu 26.04, avec détection des accès mémoire
+invalides, comportements indéfinis et fuites. Chaque compilation et exécution de
+test est limitée à deux minutes. Les tests Go et les mesures de restitution du
+frontend complètent ce contrôle ; ils ne constituent pas une preuve pour toute
+entrée imaginable.
 
- * If you are using mlpack in multiple .cpp files, consider using [`extern
-   templates`](https://isocpp.org/wiki/faq/cpp11-language-templates) so that the
-   compiler only instantiates each template once; add an explicit template
-   instantiation for each mlpack template type you want to use in a .cpp file,
-   and then use `extern` definitions elsewhere to let the compiler know it
-   exists in a different file.
+## Maintenance
 
-Other strategies exist too, such as precompiled headers, compiler options,
-[`ccache`](https://ccache.dev), and others.
-
-## 5. Building mlpack's test suite
-
-See the [installation instruction section](doc/user/install.md#build-tests).
-
-## 6. Further Resources
-
-More documentation is available for both users and developers.
-
- * [Documentation homepage](https://www.mlpack.org/doc/index.html)
-
-To learn about the development goals of mlpack in the short- and medium-term
-future, see the [vision document](https://www.mlpack.org/papers/vision.pdf).
-
-If you have problems, find a bug, or need help, you can try visiting
-the [mlpack help](https://www.mlpack.org/questions.html) page, or [mlpack on
-Github](https://github.com/mlpack/mlpack/).  Alternately, mlpack help can be
-found on Matrix at `#mlpack`; see also the
-[community](https://www.mlpack.org/doc/developer/community.html) page.
+Modifier directement les sources conservées ; aucun patch ni génération chez le
+consommateur. Après validation, publier un nouveau tag sémantique immuable du
+module natif, puis mettre sa version à jour dans le module utilisateur. Les
+versions stables existantes et `master` restent indépendants de cette branche.

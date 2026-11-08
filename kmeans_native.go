@@ -46,8 +46,8 @@ func KMeans(data []float64, dimensions, clusters int, initial []float64,
 	if keepEmpty {
 		keep = 1
 	}
-	unlock := Acquire()
-	defer unlock()
+	calls.Lock()
+	defer calls.Unlock()
 	status := C.milviKmeans((*C.double)(unsafe.Pointer(unsafe.SliceData(data))), C.size_t(len(result.Labels)),
 		C.size_t(dimensions), C.size_t(clusters), (*C.double)(unsafe.Pointer(unsafe.SliceData(initial))),
 		C.size_t(maxIterations), C.double(tolerance), C.int(algorithm), C.int(threads), keep,

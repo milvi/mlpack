@@ -12,114 +12,43 @@
 #ifndef MLPACK_BASE_HPP
 #define MLPACK_BASE_HPP
 
-// Defining _USE_MATH_DEFINES should set M_PI.
-#define _USE_MATH_DEFINES
-#include <cmath>
-
-// Next, standard includes.
-#include <any>
-#include <cctype>
+#if __cplusplus < 201703L
+  #error "K-means requiert C++17 ou une version ultérieure"
+#endif
+#include <algorithm>
+#include <cassert>
 #include <cfloat>
 #include <climits>
+#include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <filesystem>
-#include <optional>
-#include <stdexcept>
-#include <string_view>
-#include <tuple>
-#include <utility>
+#include <iostream>
+#include <limits>
+#include <memory>
 #include <numeric>
-#include <vector>
 #include <queue>
+#include <sstream>
+#include <stdexcept>
 #include <string>
-
-// But if it's not defined, we'll do it.
-#ifndef M_PI
-  #define M_PI 3.141592653589793238462643383279
-#endif
-
-// Include mlpack configuration.
-#ifdef MLPACK_CUSTOM_CONFIG_FILE
-  // During the build process, CMake will generate a custom configuration file
-  // specific to the system.  When CMake is used to build mlpack, that custom
-  // file is used via the MLPACK_CUSTOM_CONFIG_FILE macro.  When mlpack is
-  // installed by CMake, the custom configuration file is installed as
-  // config.hpp, and MLPACK_CUSTOM_CONFIG_FILE is not set after installation.
-  #undef MLPACK_WRAP_INCLUDE
-  #define MLPACK_WRAP_INCLUDE(x) <x>
-  #include MLPACK_WRAP_INCLUDE(MLPACK_CUSTOM_CONFIG_FILE)
-#else
-  #include "config.hpp"
-#endif
-
-// Give ourselves a nice way to force functions to be inline if we need.
-#undef mlpack_force_inline
-#define mlpack_force_inline
-#if defined(__GNUG__) && !defined(DEBUG)
-  #undef mlpack_force_inline
-  #define mlpack_force_inline __attribute__((always_inline))
-#elif defined(_MSC_VER) && !defined(DEBUG)
-  #undef mlpack_force_inline
-  #define mlpack_force_inline __forceinline
-#endif
-
-// detect C++17 mode
-#if (__cplusplus >= 201703L)
-  #undef  MLPACK_HAVE_CXX17
-  #define MLPACK_HAVE_CXX17
-#endif
-
-#if defined(_MSVC_LANG)
-  #if (_MSVC_LANG >= 201703L)
-    #undef  MLPACK_HAVE_CXX17
-    #define MLPACK_HAVE_CXX17
-  #endif
-#endif
-
-#if !defined(MLPACK_HAVE_CXX17)
-  #error "Need to enable C++17 mode in your compiler"
-#endif
-
-// Armadillo does not provide an official support for unsigned / signed 8 bits
-// integers.
-// Since `char` might be represented differently on various hardware.
-// We override Armadillo definition for unsigned and signed 8 bits integer to
-// use uint8_t / int8_t respectively.
-#ifndef ARMA_U8_TYPE
-  #define ARMA_U8_TYPE std::uint8_t
-#endif
-
-#ifndef ARMA_S8_TYPE
-  #define ARMA_S8_TYPE std::int8_t
-#endif
-
-// Now include Armadillo and traits that we use for it.
+#include <tuple>
+#include <type_traits>
+#include <utility>
+#include <vector>
+#include "config.hpp"
 #include <armadillo>
 #include <mlpack/core/util/arma_traits.hpp>
-#include <mlpack/core/util/omp_reductions.hpp>
-#include <mlpack/core/arma_extend/find_nan.hpp>
 
-// On Visual Studio, disable C4519 (default arguments for function templates)
-// since it's by default an error, which doesn't even make any sense because
-// it's part of the C++11 standard.
-#ifdef _MSC_VER
-  #pragma warning(disable : 4519)
+#if defined(__GNUG__) && !defined(DEBUG)
+  #define mlpack_force_inline __attribute__((always_inline))
+#else
+  #define mlpack_force_inline
 #endif
 
-// OpenMP usage must be version 3.1 or newer, if it is being used.
-#if (defined(_OPENMP) && (_OPENMP >= 201107))
-  #undef MLPACK_USE_OPENMP
+#ifdef _OPENMP
   #define MLPACK_USE_OPENMP
   #include <omp.h>
-#elif defined(_OPENMP)
-  #ifdef _MSC_VER
-    #error "mlpack requires OpenMP 3.1+; compile without /OPENMP"
-  #else
-    #error "mlpack requires OpenMP 3.1+; disable OpenMP in your compiler"
-  #endif
 #endif
 
 #endif

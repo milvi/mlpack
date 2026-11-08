@@ -36,12 +36,6 @@ class EmptyStatistic
   template<typename TreeType>
   EmptyStatistic(TreeType& /* node */) { }
 
-  /**
-   * Serialize the statistic (there's nothing to be saved).
-   */
-  template<typename Archive>
-  void serialize(Archive& /* ar */, const uint32_t /* version */)
-  { }
 };
 
 } // namespace mlpack

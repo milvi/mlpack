@@ -16,9 +16,6 @@
 // Just in case it hasn't been included.
 #include "prefixedoutstream.hpp"
 
-#ifdef MLPACK_HAS_BFD_DL
-  #include "backtrace.hpp"
-#endif
 
 #include <iostream>
 #include <sstream>
@@ -223,30 +220,6 @@ PrefixedOutStream::BaseLogic(const T& val)
       destination << std::endl;
 
     // Print a backtrace, if we can.
-#ifdef MLPACK_HAS_BFD_DL
-    if (fatal && !ignoreInput && backtrace)
-    {
-      size_t nl;
-      size_t pos = 0;
-
-      Backtrace bt;
-      std::string btLine = bt.ToString();
-      while ((nl = btLine.find('\n', pos)) != std::string::npos)
-      {
-        PrefixIfNeeded();
-
-        if (!ignoreInput)
-        {
-          destination << btLine.substr(pos, nl - pos);
-          destination << std::endl;
-        }
-
-        carriageReturned = true; // Regardless of whether or not we display it.
-
-        pos = nl + 1;
-      }
-    }
-#endif
 
     throw std::runtime_error("fatal error; see Log::Fatal output");
   }
@@ -355,30 +328,6 @@ PrefixedOutStream::BaseLogic(const T& val)
       destination << std::endl;
 
     // Print a backtrace, if we can.
-#ifdef MLPACK_HAS_BFD_DL
-    if (fatal && !ignoreInput)
-    {
-      size_t nl;
-      size_t pos = 0;
-
-      Backtrace bt;
-      std::string btLine = bt.ToString();
-      while ((nl = btLine.find('\n', pos)) != std::string::npos)
-      {
-        PrefixIfNeeded();
-
-        if (!ignoreInput)
-        {
-          destination << btLine.substr(pos, nl - pos);
-          destination << std::endl;
-        }
-
-        carriageReturned = true; // Regardless of whether or not we display it.
-
-        pos = nl + 1;
-      }
-    }
-#endif
 
     throw std::runtime_error("fatal error; see Log::Fatal output");
   }

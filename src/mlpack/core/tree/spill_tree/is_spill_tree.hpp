@@ -11,7 +11,6 @@
 #ifndef MLPACK_CORE_TREE_SPILL_TREE_IS_SPILL_TREE_HPP
 #define MLPACK_CORE_TREE_SPILL_TREE_IS_SPILL_TREE_HPP
 
-#include "spill_tree.hpp"
 
 namespace mlpack {
 
@@ -22,19 +21,7 @@ struct IsSpillTree
   static const bool value = false;
 };
 
-// Specialization for SpillTree.
-template<typename DistanceType,
-         typename StatisticType,
-         typename MatType,
-         template<typename HyperplaneDistanceType, typename HyperplaneMatType>
-            class HyperplaneType,
-         template<typename SplitDistanceType, typename SplitMatType>
-            class SplitType>
-struct IsSpillTree<SpillTree<DistanceType, StatisticType, MatType,
-    HyperplaneType, SplitType>>
-{
-  static const bool value = true;
-};
+// Le périmètre ne contient que des KD-trees.
 
 } // namespace mlpack
 

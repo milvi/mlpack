@@ -18,7 +18,6 @@
 #include <memory>
 #include <mlpack/core/tree/binary_space_tree.hpp>
 #include <mlpack/methods/neighbor_search/neighbor_search.hpp>
-#include <mlpack/core/tree/cover_tree.hpp>
 
 #include "dual_tree_kmeans_statistic.hpp"
 
@@ -162,12 +161,6 @@ void RestoreChildren(TreeType& node,
 //! type (a kd-tree).
 template<typename DistanceType, typename MatType>
 using DefaultDualTreeKMeans = DualTreeKMeans<DistanceType, MatType>;
-
-//! A template typedef for the DualTreeKMeans algorithm with the cover tree
-//! type.
-template<typename DistanceType, typename MatType>
-using CoverTreeDualTreeKMeans = DualTreeKMeans<DistanceType, MatType,
-    StandardCoverTree>;
 
 } // namespace mlpack
 

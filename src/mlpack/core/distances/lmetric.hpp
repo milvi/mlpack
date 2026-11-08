@@ -82,9 +82,6 @@ class LMetric
   static typename VecTypeA::elem_type Evaluate(const VecTypeA& a,
                                                const VecTypeB& b);
 
-  //! Serialize the metric (nothing to do).
-  template<typename Archive>
-  void serialize(Archive& /* ar */, const uint32_t /* version */) { }
 
   //! The power of the metric.
   static const int Power = TPower;

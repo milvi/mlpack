@@ -197,15 +197,6 @@ inline bool RangeType<T>::Contains(const RangeType<T>& r) const
   return lo <= r.hi && hi >= r.lo;
 }
 
-//! Serialize the range.
-template<typename T>
-template<typename Archive>
-void RangeType<T>::serialize(Archive& ar, const uint32_t /* version */)
-{
-  ar(CEREAL_NVP(hi));
-  ar(CEREAL_NVP(lo));
-}
-
 } // namespace mlpack
 
 #endif

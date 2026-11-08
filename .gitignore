@@ -1,18 +1,4 @@
-build*/
-xcode*
-.DS_Store
-.vscode
-.idea
-cmake-build-*
+/native-memory
+*.o
 *.pyc
-Testing/
-*.swp
-*.swo
-*~
-local/
-local-*
-.editorconfig
-# three files from GNU global
-GPATH
-GRTAGS
-GTAGS
+__pycache__/

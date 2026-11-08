@@ -170,11 +170,6 @@ class RangeType
    */
   inline bool Contains(const RangeType& r) const;
 
-  /**
-   * Serialize the range object.
-   */
-  template<typename Archive>
-  void serialize(Archive& ar, const uint32_t version);
 };
 
 } // namespace mlpack

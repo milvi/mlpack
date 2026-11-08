@@ -308,15 +308,6 @@ class BinarySpaceTree
    */
   BinarySpaceTree& operator=(BinarySpaceTree&& other);
 
-  /**
-   * Initialize the tree from a cereal archive.
-   *
-   * @param ar Archive to load tree from.  Must be an iarchive, not an oarchive.
-   */
-  template<typename Archive>
-  BinarySpaceTree(
-      Archive& ar,
-      const typename std::enable_if_t<cereal::is_loading<Archive>()>* = 0);
 
   /**
    * Deletes this node, deallocating the memory for the children and calling
@@ -554,20 +545,8 @@ class BinarySpaceTree
   template<typename BoundType2>
   void UpdateBound(BoundType2& boundToUpdate);
 
-  /**
-   * Update the bound of the current node. This method is designed for
-   * HollowBallBound only.
-   *
-   * @param boundToUpdate The bound to update.
-   */
-  void UpdateBound(HollowBallBound<DistanceType, ElemType>& boundToUpdate);
 
  public:
-  /**
-   * Serialize the tree.
-   */
-  template<typename Archive>
-  void serialize(Archive& ar, const uint32_t version);
 };
 
 } // namespace mlpack
