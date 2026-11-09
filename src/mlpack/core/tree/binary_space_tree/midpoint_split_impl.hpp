@@ -33,7 +33,7 @@ bool MidpointSplit<BoundType, MatType>::SplitNode(const BoundType& bound,
   // the bound's width.
   if (BoundTraits<BoundType>::HasTightBounds)
   {
-    for (size_t d = 0; d < data.n_rows; d++)
+    for (size_t d = 0; (mlpack::detail::PollDeadline(), d < data.n_rows); d++)
     {
       const double width = bound[d].Width();
 
@@ -50,11 +50,11 @@ bool MidpointSplit<BoundType, MatType>::SplitNode(const BoundType& bound,
   else
   {
     // We must individually calculate bounding boxes.
-    Range* ranges = new Range[data.n_rows];
-    for (size_t i = begin; i < begin + count; ++i)
+    auto ranges = std::make_unique<Range[]>(data.n_rows);
+    for (size_t i = begin; (mlpack::detail::PollDeadline(), i < begin + count); ++i)
     {
       // Expand each dimension as necessary.
-      for (size_t d = 0; d < data.n_rows; ++d)
+      for (size_t d = 0; (mlpack::detail::PollDeadline(), d < data.n_rows); ++d)
       {
         const double val = data(d, i);
         if (val < ranges[d].Lo())
@@ -65,7 +65,7 @@ bool MidpointSplit<BoundType, MatType>::SplitNode(const BoundType& bound,
     }
 
     // Now, which is the widest?
-    for (size_t d = 0; d < data.n_rows; d++)
+    for (size_t d = 0; (mlpack::detail::PollDeadline(), d < data.n_rows); d++)
     {
       const double width = ranges[d].Width();
       if (width > maxWidth)
@@ -77,7 +77,6 @@ bool MidpointSplit<BoundType, MatType>::SplitNode(const BoundType& bound,
       }
     }
 
-    delete[] ranges;
   }
 
   if (maxWidth <= 0) // All these points are the same.  We can't split.

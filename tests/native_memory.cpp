@@ -38,7 +38,7 @@ int main()
   int converged;
   char message[4096];
   auto call = [&](int algorithm) {
-    return milviKmeans(data.data(),n,d,k,initial.data(),20,1e-5,algorithm,1,0,
+    return milviKmeans(data.data(),n,d,k,initial.data(),20000000000ULL,1e-5,algorithm,1,0,
         centers.data(),labels.data(),&actual,&iterations,&calculations,&inertia,
         &converged,message,sizeof(message));
   };
@@ -87,6 +87,31 @@ int main()
       return 4;
     }
   }
+#ifdef MLPACK_DEADLINE_TESTING
+  // Expirer à chaque contrôle successif : construction, itérations et sortie.
+  size_t deadlineFailures = 0;
+  bool diagnosticAfterIteration = false;
+  for (long position = 0; position < 1000; ++position)
+  {
+    mlpack::detail::checksBeforeTimeout = position;
+    const int status = call(0);
+    mlpack::detail::checksBeforeTimeout = -1;
+    if (status == 2)
+    {
+      ++deadlineFailures;
+      diagnosticAfterIteration |= iterations > 0;
+      if (actual != 0 || converged != 0) return 9;
+    }
+    else if (status != 0) return 10;
+    if (liveAllocations != baseline)
+    {
+      std::cerr << "Expiration : mémoire non restituée au contrôle " << position << std::endl;
+      return 11;
+    }
+  }
+  if (deadlineFailures < 20 || !diagnosticAfterIteration) return 12;
+  std::cout << "Expirations injectées sans allocation restante : " << deadlineFailures << std::endl;
+#endif
   if (treeSuccesses == 0) return 6;
   std::cout << "Pannes d’affectation/construction d’arbre interceptées : " << treeFailures << std::endl;
   std::cout << "Allocations interrompues interceptées : " << rejected << std::endl;

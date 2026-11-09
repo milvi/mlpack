@@ -16,6 +16,6 @@ RUN go version && g++ --version && dpkg-query -W libarmadillo-dev
 RUN timeout -k 5s 120s python3 tools/check-source.py
 RUN timeout -k 5s 120s go test -timeout 90s -v ./...
 RUN timeout -k 5s 120s g++ -std=c++17 -O1 -g -fno-omit-frame-pointer -fsanitize=address,undefined \
-    -fopenmp -DMLPACK_GO_MONOLITHIC -DDEBUG -DMLPACK_NO_PRINT_DEBUG -I. -Isrc \
+    -fopenmp -DMLPACK_GO_MONOLITHIC -DDEBUG -DMLPACK_NO_PRINT_DEBUG -DMLPACK_DEADLINE_TESTING -I. -Isrc \
     tests/native_memory.cpp native_kmeans_api.cpp -larmadillo -o /home/mlpack/native-memory
 CMD ["timeout", "-k", "5s", "120s", "/home/mlpack/native-memory"]

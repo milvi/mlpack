@@ -24,6 +24,7 @@ typename VecTypeA::elem_type LMetric<Power, TakeRoot>::Evaluate(
     const VecTypeA& a,
     const VecTypeB& b)
 {
+  detail::PollDeadline();
   typename VecTypeA::elem_type sum = 0;
   for (size_t i = 0; i < a.n_elem; ++i)
     sum += std::pow(fabs(a[i] - b[i]), Power);
@@ -41,6 +42,7 @@ typename VecTypeA::elem_type LMetric<1, true>::Evaluate(
     const VecTypeA& a,
     const VecTypeB& b)
 {
+  detail::PollDeadline();
   return accu(abs(a - b));
 }
 
@@ -50,6 +52,7 @@ typename VecTypeA::elem_type LMetric<1, false>::Evaluate(
     const VecTypeA& a,
     const VecTypeB& b)
 {
+  detail::PollDeadline();
   return accu(abs(a - b));
 }
 
@@ -60,6 +63,7 @@ typename VecTypeA::elem_type LMetric<2, true>::Evaluate(
     const VecTypeA& a,
     const VecTypeB& b)
 {
+  detail::PollDeadline();
   return arma::norm(a - b, 2);
 }
 
@@ -69,6 +73,7 @@ typename VecTypeA::elem_type LMetric<2, false>::Evaluate(
     const VecTypeA& a,
     const VecTypeB& b)
 {
+  detail::PollDeadline();
   return accu(arma::square(a - b));
 }
 
@@ -79,6 +84,7 @@ typename VecTypeA::elem_type LMetric<3, true>::Evaluate(
     const VecTypeA& a,
     const VecTypeB& b)
 {
+  detail::PollDeadline();
   typename VecTypeA::elem_type sum = 0;
   for (size_t i = 0; i < a.n_elem; ++i)
     sum += std::pow(fabs(a[i] - b[i]), 3.0);
@@ -92,6 +98,7 @@ typename VecTypeA::elem_type LMetric<3, false>::Evaluate(
     const VecTypeA& a,
     const VecTypeB& b)
 {
+  detail::PollDeadline();
   return accu(pow(arma::abs(a - b), 3.0));
 }
 
@@ -102,6 +109,7 @@ typename VecTypeA::elem_type LMetric<INT_MAX, false>::Evaluate(
     const VecTypeA& a,
     const VecTypeB& b)
 {
+  detail::PollDeadline();
   return arma::as_scalar(arma::max(arma::abs(a - b)));
 }
 

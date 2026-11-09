@@ -37,6 +37,7 @@
 #include <utility>
 #include <vector>
 #include "config.hpp"
+#include <mlpack/core/util/deadline.hpp>
 #include <armadillo>
 #include <mlpack/core/util/arma_traits.hpp>
 

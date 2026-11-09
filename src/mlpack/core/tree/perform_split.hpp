@@ -45,18 +45,18 @@ size_t PerformSplit(MatType& data,
 
   // First half-iteration of the loop is out here because the termination
   // condition is in the middle.
-  while ((left <= right) &&
-      (SplitType::AssignToLeftNode(data.col(left), splitInfo)))
+  while ( (mlpack::detail::PollDeadline(), (left <= right) &&
+      (SplitType::AssignToLeftNode(data.col(left), splitInfo))))
     left++;
-  while ((!SplitType::AssignToLeftNode(data.col(right), splitInfo)) &&
-      (left <= right) && (right > 0))
+  while ( (mlpack::detail::PollDeadline(), (!SplitType::AssignToLeftNode(data.col(right), splitInfo)) &&
+      (left <= right) && (right > 0)))
     right--;
 
   // Shortcut for when all points are on the right.
   if (left == right && right == 0)
     return left;
 
-  while (left <= right)
+  while ( (mlpack::detail::PollDeadline(), left <= right))
   {
     // Swap columns.
     data.swap_cols(left, right);
@@ -64,16 +64,16 @@ size_t PerformSplit(MatType& data,
     // See how many points on the left are correct.  When they are correct,
     // increase the left counter accordingly.  When we encounter one that isn't
     // correct, stop.  We will switch it later.
-    while (SplitType::AssignToLeftNode(data.col(left), splitInfo) &&
-        (left <= right))
+    while ( (mlpack::detail::PollDeadline(), SplitType::AssignToLeftNode(data.col(left), splitInfo) &&
+        (left <= right)))
       left++;
 
     // Now see how many points on the right are correct.  When they are correct,
     // decrease the right counter accordingly.  When we encounter one that isn't
     // correct, stop.  We will switch it with the wrong point we found in the
     // previous loop.
-    while ((!SplitType::AssignToLeftNode(data.col(right), splitInfo)) &&
-        (left <= right))
+    while ( (mlpack::detail::PollDeadline(), (!SplitType::AssignToLeftNode(data.col(right), splitInfo)) &&
+        (left <= right)))
       right--;
   }
 
@@ -111,18 +111,18 @@ size_t PerformSplit(MatType& data,
 
   // First half-iteration of the loop is out here because the termination
   // condition is in the middle.
-  while ((left <= right) &&
-         (SplitType::AssignToLeftNode(data.col(left), splitInfo)))
+  while ( (mlpack::detail::PollDeadline(), (left <= right) &&
+         (SplitType::AssignToLeftNode(data.col(left), splitInfo))))
     left++;
-  while ((!SplitType::AssignToLeftNode(data.col(right), splitInfo)) &&
-         (left <= right) && (right > 0))
+  while ( (mlpack::detail::PollDeadline(), (!SplitType::AssignToLeftNode(data.col(right), splitInfo)) &&
+         (left <= right) && (right > 0)))
     right--;
 
   // Shortcut for when all points are on the right.
   if (left == right && right == 0)
     return left;
 
-  while (left <= right)
+  while ( (mlpack::detail::PollDeadline(), left <= right))
   {
     // Swap columns.
     data.swap_cols(left, right);
@@ -135,16 +135,16 @@ size_t PerformSplit(MatType& data,
     // See how many points on the left are correct.  When they are correct,
     // increase the left counter accordingly.  When we encounter one that isn't
     // correct, stop.  We will switch it later.
-    while (SplitType::AssignToLeftNode(data.col(left), splitInfo) &&
-        (left <= right))
+    while ( (mlpack::detail::PollDeadline(), SplitType::AssignToLeftNode(data.col(left), splitInfo) &&
+        (left <= right)))
       left++;
 
     // Now see how many points on the right are correct.  When they are correct,
     // decrease the right counter accordingly.  When we encounter one that isn't
     // correct, stop.  We will switch it with the wrong point we found in the
     // previous loop.
-    while ((!SplitType::AssignToLeftNode(data.col(right), splitInfo)) &&
-        (left <= right))
+    while ( (mlpack::detail::PollDeadline(), (!SplitType::AssignToLeftNode(data.col(right), splitInfo)) &&
+        (left <= right)))
       right--;
   }
 

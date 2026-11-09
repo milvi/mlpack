@@ -1,6 +1,6 @@
 # K-means C++ compilé automatiquement par Go
 
-Branche `codex/kmeans-only`, préversion `v0.2.0-kmeans.1` du module
+Branche `codex/kmeans-only`, préversion `v0.2.0-kmeans.2` du module
 `github.com/milvi/mlpack`. Le code est extrait de mlpack C++ 4.8.0.
 Le module utilisateur est [`github.com/milvi/mlpack-go`](https://github.com/milvi/mlpack-go/tree/codex/kmeans-only).
 
@@ -10,7 +10,7 @@ Le module utilisateur est [`github.com/milvi/mlpack-go`](https://github.com/milv
 - K-means dual-tree avec KD-tree, bornes rectangulaires et recherche exacte de
   voisins nécessaire aux itérations et à l’affectation finale.
 - K-means naïf comme référence numérique, accessible par le même appel.
-- 55 en-têtes : dépendances exactes du calcul et du pilote mémoire, vérifiées
+- 56 en-têtes : dépendances exactes du calcul et du pilote mémoire, vérifiées
   par le préprocesseur en modes normal et debug.
 
 Les autres méthodes, bindings, générateurs, modèles persistants, chargeurs de
@@ -49,8 +49,12 @@ frontière C intercepte les exceptions et remplit un message borné ; Go rend
 
 Les centres vides restent fixes pendant les itérations, puis sont retirés à la
 fin sauf option contraire. Les étiquettes sont renumérotées et correspondent à
-l’ordre initial des points. `Converged == false` indique que le budget d’itérations
-est atteint ; il faut examiner ce champ même si `error` est nul.
+l’ordre initial des points. `MaxDuration` est un budget temporel, de 20 secondes par défaut. Le nombre
+d’itérations est uniquement diagnostique. À expiration, `ErrTimeLimit` est rendu
+avec `Iterations`, sans centres ni étiquettes partiels. Les contrôles sont
+coopératifs dans les boucles, y compris construction des arbres et OpenMP ;
+les opérations mémoire indivisibles et le nettoyage peuvent dépasser légèrement
+le budget. Aucun thread natif n’est abandonné après le retour.
 
 ## Vérifications
 

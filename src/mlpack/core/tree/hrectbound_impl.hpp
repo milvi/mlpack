@@ -562,8 +562,16 @@ HRectBound<DistanceType, ElemType>::operator|=(const MatType& data)
 
   Log::Assert(data.n_rows == dim);
 
-  arma::Col<ElemType> mins(min(data, 1));
-  arma::Col<ElemType> maxs(max(data, 1));
+  arma::Col<ElemType> mins(dim), maxs(dim);
+  mins.fill(std::numeric_limits<ElemType>::infinity());
+  maxs.fill(-std::numeric_limits<ElemType>::infinity());
+  for (size_t column = 0; column < data.n_cols; ++column)
+    for (size_t row = 0; row < dim; ++row)
+    {
+      detail::PollDeadline();
+      mins[row] = std::min(mins[row], data(row, column));
+      maxs[row] = std::max(maxs[row], data(row, column));
+    }
 
   minWidth = std::numeric_limits<ElemType>::max();
   for (size_t i = 0; i < dim; ++i)

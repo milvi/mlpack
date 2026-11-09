@@ -64,7 +64,7 @@ DualTreeKMeans<DistanceType, MatType, TreeType>::DualTreeKMeans(
     assignments(dataset.n_cols),
     visited(dataset.n_cols, false) // Fill with false.
 {
-  for (size_t i = 0; i < dataset.n_cols; ++i)
+  for (size_t i = 0; (mlpack::detail::PollDeadline(), i < dataset.n_cols); ++i)
   {
     prunedPoints[i] = false;
     visited[i] = false;
@@ -131,7 +131,7 @@ double DualTreeKMeans<DistanceType, MatType, TreeType>::Iterate(
     // We need to do the unmapping ourselves, if the tree does mapping.
     if (TreeTraits<Tree>::RearrangesDataset)
     {
-      for (size_t i = 0; i < interclusterDistances.n_elem; ++i)
+      for (size_t i = 0; (mlpack::detail::PollDeadline(), i < interclusterDistances.n_elem); ++i)
         interclusterDistances[oldFromNewCentroids[i]] =
             distances[i];
 
@@ -139,7 +139,7 @@ double DualTreeKMeans<DistanceType, MatType, TreeType>::Iterate(
 
     UpdateTree(*tree, centroids);
 
-    for (size_t i = 0; i < dataset.n_cols; ++i)
+    for (size_t i = 0; (mlpack::detail::PollDeadline(), i < dataset.n_cols); ++i)
       visited[i] = false;
   }
   else
@@ -159,12 +159,12 @@ double DualTreeKMeans<DistanceType, MatType, TreeType>::Iterate(
   typename Tree::template BreadthFirstDualTreeTraverser<RuleType>
       traverser(rules);
 
-  CoalesceTree(*tree);
 
   // Set the number of pruned centroids in the root to 0.
   tree->Stat().Pruned() = 0;
   try
   {
+    CoalesceTree(*tree);
     traverser.Traverse(*tree, nns.ReferenceTree());
   }
   catch (...)
@@ -185,7 +185,7 @@ double DualTreeKMeans<DistanceType, MatType, TreeType>::Iterate(
   // Now, calculate how far the clusters moved, after normalizing them.
   double residual = 0.0;
   clusterDistances[centroids.n_cols] = 0.0;
-  for (size_t c = 0; c < centroids.n_cols; ++c)
+  for (size_t c = 0; (mlpack::detail::PollDeadline(), c < centroids.n_cols); ++c)
   {
     if (counts[c] == 0)
     {
@@ -294,7 +294,7 @@ void DualTreeKMeans<DistanceType, MatType, TreeType>::UpdateTree(
   // Recurse into children, and if all the children (and all the points) are
   // pruned, then we can mark this as statically pruned.
   bool allChildrenPruned = true;
-  for (size_t i = 0; i < node.NumChildren(); ++i)
+  for (size_t i = 0; (mlpack::detail::PollDeadline(), i < node.NumChildren()); ++i)
   {
     UpdateTree(node.Child(i), centroids, unadjustedUpperBound,
         adjustedUpperBound, unadjustedLowerBound, adjustedLowerBound);
@@ -316,7 +316,7 @@ void DualTreeKMeans<DistanceType, MatType, TreeType>::UpdateTree(
   else if (!node.Stat().StaticPruned())
   {
     // Try to prune individual points.
-    for (size_t i = 0; i < node.NumPoints(); ++i)
+    for (size_t i = 0; (mlpack::detail::PollDeadline(), i < node.NumPoints()); ++i)
     {
       const size_t index = node.Point(i);
       if (!visited[index] && !prunedPoints[index])
@@ -449,7 +449,7 @@ void DualTreeKMeans<DistanceType, MatType, TreeType>::ExtractCentroids(
     // Only check at leaves.
     if (node.NumChildren() == 0)
     {
-      for (size_t i = 0; i < node.NumPoints(); ++i)
+      for (size_t i = 0; (mlpack::detail::PollDeadline(), i < node.NumPoints()); ++i)
       {
         const size_t owner = assignments[node.Point(i)];
         newCentroids.col(owner) += dataset.col(node.Point(i));
@@ -458,7 +458,7 @@ void DualTreeKMeans<DistanceType, MatType, TreeType>::ExtractCentroids(
     }
 
     // The node is not entirely owned by a cluster.  Recurse.
-    for (size_t i = 0; i < node.NumChildren(); ++i)
+    for (size_t i = 0; (mlpack::detail::PollDeadline(), i < node.NumChildren()); ++i)
       ExtractCentroids(node.Child(i), newCentroids, newCounts, centroids);
   }
 }
@@ -480,7 +480,7 @@ void DualTreeKMeans<DistanceType, MatType, TreeType>::CoalesceTree(
   if (node.Parent() != NULL)
   {
     // First, we should coalesce those nodes that aren't statically pruned.
-    for (size_t i = node.NumChildren() - 1; i > 0; --i)
+    for (size_t i = node.NumChildren() - 1; (mlpack::detail::PollDeadline(), i > 0); --i)
     {
       if (node.Child(i).Stat().StaticPruned())
         HideChild(node, i);
@@ -507,7 +507,7 @@ void DualTreeKMeans<DistanceType, MatType, TreeType>::CoalesceTree(
   {
     // We can't coalesce the root, so call the children individually and
     // coalesce them.
-    for (size_t i = 0; i < node.NumChildren(); ++i)
+    for (size_t i = 0; (mlpack::detail::PollDeadline(), i < node.NumChildren()); ++i)
       CoalesceTree(node.Child(i), i);
   }
 }

@@ -54,7 +54,7 @@ NeighborSearchRules<SortPolicy, DistanceType, TreeType>::NeighborSearchRules(
   CandidateList pqueue(CandidateCmp(), std::move(vect));
 
   candidates.reserve(querySet.n_cols);
-  for (size_t i = 0; i < querySet.n_cols; ++i)
+  for (size_t i = 0; (mlpack::detail::PollDeadline(), i < querySet.n_cols); ++i)
     candidates.push_back(pqueue);
 }
 
@@ -67,10 +67,10 @@ void NeighborSearchRules<SortPolicy, DistanceType, TreeType>::GetResults(
   neighbors.set_size(k, querySet.n_cols);
   distances.set_size(k, querySet.n_cols);
 
-  for (size_t i = 0; i < querySet.n_cols; ++i)
+  for (size_t i = 0; (mlpack::detail::PollDeadline(), i < querySet.n_cols); ++i)
   {
     CandidateList& pqueue = candidates[i];
-    for (size_t j = 1; j <= k; ++j)
+    for (size_t j = 1; (mlpack::detail::PollDeadline(), j <= k); ++j)
     {
       neighbors(k - j, i) = (IndexType) pqueue.top().second;
       distances(k - j, i) = pqueue.top().first;
@@ -400,7 +400,7 @@ inline double NeighborSearchRules<SortPolicy, DistanceType, TreeType>::
   double bestPointDistance = SortPolicy::WorstDistance();
 
   // Loop over points held in the node.
-  for (size_t i = 0; i < queryNode.NumPoints(); ++i)
+  for (size_t i = 0; (mlpack::detail::PollDeadline(), i < queryNode.NumPoints()); ++i)
   {
     const double dist = candidates[queryNode.Point(i)].top().first;
     if (SortPolicy::IsBetter(worstDistance, dist))
@@ -413,7 +413,7 @@ inline double NeighborSearchRules<SortPolicy, DistanceType, TreeType>::
 
   // Loop over children of the node, and use their cached information to
   // assemble bounds.
-  for (size_t i = 0; i < queryNode.NumChildren(); ++i)
+  for (size_t i = 0; (mlpack::detail::PollDeadline(), i < queryNode.NumChildren()); ++i)
   {
     const double firstBound = queryNode.Child(i).Stat().FirstBound();
     const double auxBound = queryNode.Child(i).Stat().AuxBound();

@@ -3,11 +3,12 @@ package native_test
 import (
 	native "github.com/milvi/mlpack"
 	"testing"
+	"time"
 )
 
 func TestNativeKMeans(t *testing.T) {
 	points := []float64{0, 0, 0, 1, 10, 10, 10, 11}
-	result, err := native.KMeans(points, 2, 2, []float64{0, 0, 10, 10}, 100, 1e-5, 0, 1, false)
+	result, err := native.KMeans(points, 2, 2, []float64{0, 0, 10, 10}, 20*time.Second, 1e-5, 0, 1, false)
 	if err != nil {
 		t.Fatal(err)
 	}

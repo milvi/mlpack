@@ -28,26 +28,29 @@ struct CallSettings
 
 template<template<class, class> class LloydStep>
 void RunIterations(const arma::mat& data, arma::mat& centers,
-    size_t limit, double tolerance, size_t& iterations, size_t& calculations,
+    double tolerance, size_t& iterations, size_t& calculations,
     bool& converged)
 {
   mlpack::EuclideanDistance distance;
   LloydStep<mlpack::EuclideanDistance, arma::mat> step(data, distance);
   arma::mat next;
   arma::Col<size_t> counts;
-  for (iterations = 0; iterations < limit;)
+  for (iterations = 0; (mlpack::detail::PollDeadline(), true);)
   {
+    mlpack::detail::CheckDeadline();
     step.Iterate(centers, next, counts);
-    for (size_t c = 0; c < counts.n_elem; ++c)
+    for (size_t c = 0; (mlpack::detail::PollDeadline(), c < counts.n_elem); ++c)
       if (counts[c] == 0) next.col(c) = centers.col(c);
     const double residual = arma::norm(next - centers, "fro");
     if (!next.is_finite() || !std::isfinite(residual))
       throw std::overflow_error("débordement numérique : réduire l’échelle des coordonnées");
     centers.swap(next);
     ++iterations;
+    calculations = step.DistanceCalculations();
+    mlpack::detail::CheckDeadline();
     if (residual <= tolerance) { converged = true; break; }
   }
-  calculations += step.DistanceCalculations();
+
 }
 
 void AssignWithKDTree(const arma::mat& data, const arma::mat& centers,
@@ -63,7 +66,7 @@ void AssignWithKDTree(const arma::mat& data, const arma::mat& centers,
   search.Search(queryTree, 1, neighbors, distances);
   labels.set_size(data.n_cols);
   inertia = 0;
-  for (size_t i = 0; i < data.n_cols; ++i)
+  for (size_t i = 0; (mlpack::detail::PollDeadline(), i < data.n_cols); ++i)
   {
     labels[queries[i]] = references[neighbors(0, i)];
     inertia += distances(0, i) * distances(0, i);
@@ -74,7 +77,7 @@ void AssignWithKDTree(const arma::mat& data, const arma::mat& centers,
 } // namespace
 
 extern "C" int milviKmeans(const double* input, size_t n, size_t dimensions,
-    size_t clusters, const double* initial, size_t maxIterations, double tolerance,
+    size_t clusters, const double* initial, uint64_t maxNanoseconds, double tolerance,
     int algorithm, int threads, int keepEmpty, double* outputCenters,
     intptr_t* outputLabels, size_t* actualClusters, size_t* iterations,
     size_t* calculations, double* inertia, int* converged,
@@ -86,16 +89,25 @@ extern "C" int milviKmeans(const double* input, size_t n, size_t dimensions,
         !iterations || !calculations || !inertia || !converged ||
         n == 0 || dimensions == 0 || clusters == 0 || clusters > n ||
         n > std::numeric_limits<size_t>::max() / dimensions ||
-        maxIterations == 0 || threads < 1 || !(tolerance > 0) ||
+        maxNanoseconds == 0 || maxNanoseconds > uint64_t(INT64_MAX) || threads < 1 || !(tolerance > 0) ||
         !std::isfinite(tolerance) || (algorithm != 0 && algorithm != 1))
       throw std::invalid_argument("paramètres k-means invalides");
+    *actualClusters = 0; *iterations = 0; *calculations = 0; *inertia = 0; *converged = 0;
+    mlpack::detail::Deadline deadline(maxNanoseconds);
+    mlpack::detail::DeadlineScope deadlineScope(&deadline);
+    deadline.Check();
     CallSettings settings(threads);
     // Copie privée : les réordonnancements des arbres ne touchent jamais Go.
-    arma::mat data(input, dimensions, n);
-    arma::mat centers(initial, dimensions, clusters);
+    arma::mat data(dimensions, n), centers(dimensions, clusters);
+    for (size_t i = 0; (mlpack::detail::PollDeadline(), i < data.n_elem); ++i)
+    { mlpack::detail::PollDeadline(); data[i] = input[i]; }
+    for (size_t i = 0; (mlpack::detail::PollDeadline(), i < centers.n_elem); ++i)
+    { mlpack::detail::PollDeadline(); centers[i] = initial[i]; }
+    deadline.Check();
     if (!data.is_finite() || !centers.is_finite())
       throw std::invalid_argument("coordonnées non finies");
-    size_t count = 0, distances = 0;
+    size_t& count = *iterations;
+    size_t& distances = *calculations;
     bool didConverge = false;
     if (clusters == 1)
     {
@@ -104,10 +116,10 @@ extern "C" int milviKmeans(const double* input, size_t n, size_t dimensions,
       didConverge = true;
     }
     else if (algorithm == 0)
-      RunIterations<mlpack::DualTreeKMeans>(data, centers, maxIterations,
+      RunIterations<mlpack::DualTreeKMeans>(data, centers,
           tolerance, count, distances, didConverge);
     else
-      RunIterations<mlpack::NaiveKMeans>(data, centers, maxIterations,
+      RunIterations<mlpack::NaiveKMeans>(data, centers,
           tolerance, count, distances, didConverge);
 
     if (!centers.is_finite())
@@ -123,7 +135,7 @@ extern "C" int milviKmeans(const double* input, size_t n, size_t dimensions,
     for (size_t label : assignments) ++counts[label];
     std::vector<size_t> mapping(clusters);
     size_t retained = 0;
-    for (size_t c = 0; c < clusters; ++c)
+    for (size_t c = 0; (mlpack::detail::PollDeadline(), c < clusters); ++c)
     {
       if (keepEmpty || counts[c] != 0)
       {
@@ -133,14 +145,21 @@ extern "C" int milviKmeans(const double* input, size_t n, size_t dimensions,
         ++retained;
       }
     }
-    for (size_t i = 0; i < n; ++i)
+    for (size_t i = 0; (mlpack::detail::PollDeadline(), i < n); ++i)
       outputLabels[i] = static_cast<intptr_t>(mapping[assignments[i]]);
+    deadline.Check();
     *actualClusters = retained;
     *iterations = count;
     *calculations = distances;
     *inertia = objective;
     *converged = didConverge;
     return 0;
+  }
+  catch (const mlpack::detail::TimeLimit&)
+  {
+    if (converged) *converged = 0;
+    if (actualClusters) *actualClusters = 0;
+    return 2;
   }
   catch (const std::exception& failure)
   {

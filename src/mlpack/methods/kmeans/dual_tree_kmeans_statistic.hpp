@@ -48,7 +48,7 @@ class DualTreeKMeansStatistic : public NeighborSearchStat<NearestNeighborSort>
   {
     // Empirically calculate the centroid.
     centroid.zeros(node.Dataset().n_rows);
-    for (size_t i = 0; i < node.NumPoints(); ++i)
+    for (size_t i = 0; (mlpack::detail::PollDeadline(), i < node.NumPoints()); ++i)
     {
       // Correct handling of cover tree: don't double-count the point which
       // appears in the children.
@@ -58,7 +58,7 @@ class DualTreeKMeansStatistic : public NeighborSearchStat<NearestNeighborSort>
       centroid += node.Dataset().col(node.Point(i));
     }
 
-    for (size_t i = 0; i < node.NumChildren(); ++i)
+    for (size_t i = 0; (mlpack::detail::PollDeadline(), i < node.NumChildren()); ++i)
       centroid += node.Child(i).NumDescendants() *
           node.Child(i).Stat().Centroid();
 
@@ -66,7 +66,7 @@ class DualTreeKMeansStatistic : public NeighborSearchStat<NearestNeighborSort>
 
     // Set the true children correctly.
     trueChildren.resize(node.NumChildren());
-    for (size_t i = 0; i < node.NumChildren(); ++i)
+    for (size_t i = 0; (mlpack::detail::PollDeadline(), i < node.NumChildren()); ++i)
       trueChildren[i] = &node.Child(i);
   }
 

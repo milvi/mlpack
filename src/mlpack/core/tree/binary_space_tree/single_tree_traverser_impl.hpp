@@ -56,7 +56,7 @@ SingleTreeTraverser<RuleType>::Traverse(
   if (referenceNode.IsLeaf())
   {
     const size_t refEnd = referenceNode.Begin() + referenceNode.Count();
-    for (size_t i = referenceNode.Begin(); i < refEnd; ++i)
+    for (size_t i = referenceNode.Begin(); (mlpack::detail::PollDeadline(), i < refEnd); ++i)
       rule.BaseCase(queryIndex, i);
   }
   else

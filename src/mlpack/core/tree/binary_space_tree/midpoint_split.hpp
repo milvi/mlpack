@@ -113,6 +113,7 @@ class MidpointSplit
   static bool AssignToLeftNode(const VecType& point,
                                const SplitInfo& splitInfo)
   {
+    detail::PollDeadline();
     return point[splitInfo.splitDimension] < splitInfo.splitVal;
   }
 };

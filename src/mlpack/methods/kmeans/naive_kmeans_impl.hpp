@@ -20,6 +20,7 @@
 #include "naive_kmeans.hpp"
 
 #include <mlpack/core/util/log.hpp>
+#include <atomic>
 
 namespace mlpack {
 
@@ -56,11 +57,18 @@ double NaiveKMeans<DistanceType, MatType>::Iterate(const arma::mat& centroids,
     sizes.emplace_back(centroids.n_cols, arma::fill::zeros);
   }
   std::exception_ptr failure;
-  #pragma omp parallel for schedule(static)
+  const auto* deadline = detail::currentDeadline;
+  std::atomic<bool> failed{false};
+  #pragma omp parallel
+  {
+  detail::DeadlineScope scope(deadline);
+  #pragma omp for schedule(static)
   for (size_t i = 0; i < dataset.n_cols; ++i)
   {
     try
     {
+      if (failed.load(std::memory_order_relaxed)) continue;
+      detail::PollDeadline();
       size_t thread = 0;
       #if defined(MLPACK_USE_OPENMP)
         thread = omp_get_thread_num();
@@ -79,10 +87,12 @@ double NaiveKMeans<DistanceType, MatType>::Iterate(const arma::mat& centroids,
     }
     catch (...)
     {
+      failed.store(true, std::memory_order_relaxed);
       #pragma omp critical
       { if (!failure) failure = std::current_exception(); }
     }
   }
+  } // Les workers ont terminé avant toute destruction des temporaires.
   if (failure) std::rethrow_exception(failure);
   // Un ordre de réduction fixe évite une dépendance à l’ordonnancement des threads.
   for (size_t thread = 0; thread < threads; ++thread)
